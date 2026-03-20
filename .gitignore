@@ -3,3 +3,6 @@
 bin/
 build/
 src/packageDir.h
+maps/*
+opencv/
+opencv_contrib/

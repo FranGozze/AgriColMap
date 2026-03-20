@@ -128,7 +128,7 @@ int OpticFlowIO::ReadKittiFlowFile(T* U, T* V, int* w, int* h, const char* filen
 	}
 
 	cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR | cv::IMREAD_ANYDEPTH);
-	if (img == NULL){
+	if (img.empty()){
 		printf("ReadKittiFlowFile: could not open %s\n", filename);
 		return -1;
 	}
