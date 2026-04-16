@@ -26,6 +26,11 @@ class EnvironmentRepresentation{
         inline cv::Mat getelevImg(){ return xyzImg; };
         inline cv::Mat getExgImg(){ return exgImg; };
 
+        inline float getXCoord(){ return x_coord; }
+        inline float getYCoord(){ return y_coord; }
+        inline int getWidth(){ return _width; }
+        inline int getHeight(){ return _height; }
+
     private:
 
         PCLptXYZRGB computeAveragePoint(std::vector<PCLptXYZRGB> &ptVec,

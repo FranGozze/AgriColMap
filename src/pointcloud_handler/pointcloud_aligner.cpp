@@ -47,6 +47,7 @@ void PointCloudAligner::computeEnvironmentalModels(const string& mov_cloud_key, 
     ERMap[mov_cloud_key]->computeMMGridMap();
 
     ERMap.emplace( fix_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(fix_cloud_key) ) );
+    std::cout << "Translation: " << _initTfMap[mov_cloud_key]->translation().head(2) << std::endl;
     ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], 0.02, _initTfMap[mov_cloud_key]->translation().head(2) );
     ERMap[fix_cloud_key]->computeMMGridMap();
 
@@ -96,18 +97,40 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
                                const Eigen::Vector2f& scale, const string& iter_num, const cv::Size& size ){
 
     cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
+    std::cout << "Set matching weights\n";
     cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
+    std::cout << "Set matching params\n";
+    std::cout << "ERMap" << ERMap.size() << "\n";                                
+
     img1.imcopy( ERMap[cloud1_name]->getExgImg() );
-    img2.imcopy( ERMap[cloud2_name]->getExgImg() );
+    img2.imcopy( ERMap[cloud2_name]->getExgImg() );    
+    // cv::imshow("img1", img1); cv::imshow("img2", img2); cv::waitKey(0); cv::destroyAllWindows();
+    
+    
+    std::cout << "Images copied for matching\n";
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
-    img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
+    img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );    
+    
+    
+    std::cout << "img1: X coord " << ERMap[cloud1_name]->getXCoord() << ", Y coord " << ERMap[cloud1_name]->getYCoord() << std::endl;
+    std::cout << "img2: X coord " << ERMap[cloud2_name]->getXCoord() << ", Y coord " << ERMap[cloud2_name]->getYCoord() << std::endl;    
+    img1.imwrite("/facultad/tesina/AgriColMap/data/exg_img1.png");
+    img2.imwrite("/facultad/tesina/AgriColMap/data/exg_img2.png");
+    
 
+    img1Cloud.imwrite("/facultad/tesina/AgriColMap/data/xyz_img1.png");
+    img2Cloud.imwrite("/facultad/tesina/AgriColMap/data/xyz_img2.png");
+
+    std::cout << "Before matching \n";                                
+    
+    
     cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
-
+    std::cout << "Matching completed. Matches found: " << matches.height() << "\n";
     if( _storeDenseOptFlw )
         WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
-
+    std::cout << "Dense optical flow written if required\n";                                    
     cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
+    std::cout << "Voting scheme completed\n";
 
     cerr << "Total correspondences: " << matches.height() << " Outliers: " << matches.height() - filteredMatches.height() <<
             " Inliers: " << filteredMatches.height() << "\n";
@@ -122,8 +145,10 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
         showDOFCorrespondeces(len, cloud1_name, cloud2_name, size);
 
     computeAndApplyDOFTransform(cloud1_name, cloud2_name, len);
+    std::cout << "Initial DOF transform computed and applied\n";
     downsamplePCL(cloud1_name);
     downsamplePCL(cloud2_name);
+    std::cout << "Point clouds downsampled\n";
 
     auto compute_start = std::chrono::high_resolution_clock::now();
     finalRefinement(cloud1_name, cloud2_name);

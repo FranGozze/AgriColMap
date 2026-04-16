@@ -199,7 +199,7 @@ void CPM::addFlowToAccumulator(const Eigen::Vector2f &pt, cv::Mat &acc){
 
 void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rgb1, const cv::Mat& rgb2){
 
-
+    std::cout << "Voting scheme started. Input matches: " << inpMatches.height() << std::endl;
     std::vector< Eigen::Vector4f > inpMatchesFilt;
     for(unsigned int it = 0; it < inpMatches.height(); ++it){
         cv::Vec3b pt1 = rgb1.at<cv::Vec3b>(inpMatches[4*it+1], inpMatches[4*it]);
@@ -209,7 +209,7 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
             inpMatchesFilt.push_back( Eigen::Vector4f( inpMatches[4*it], inpMatches[4*it+1], inpMatches[4*it+2], inpMatches[4*it+3]  ) );
         }
     }
-
+    std::cout << "Filtered matches: " << inpMatchesFilt.size() << std::endl;
     std::vector< Eigen::Vector3f > voting_vector;
     voting_vector.push_back( Eigen::Vector3f(inpMatchesFilt[0](2)-inpMatchesFilt[0](0), inpMatchesFilt[0](3)-inpMatchesFilt[0](1), 1) );
 
@@ -233,14 +233,21 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
             count++;
         }
     }
+    std::cout << "Voting vector size: " << voting_vector.size() << std::endl;
 
     float max = 0; int max_index; int voting_size = voting_vector.size();
+    if( voting_size == 0 ){
+        std::cerr << "No matches left after filtering for voting scheme. Exiting.\n";
+        outMatches = FImage(4, 0, 1);
+        return;
+    }
     for(unsigned int i = 0; i <  voting_size; ++i){
         if( voting_vector[i](2) > max ){
             max = voting_vector[i](2);
             max_index = i;
         }
     }
+    std::cout << "Max votes: " << max << std::endl;
 
     bool _isValid[len]; int counter = 0;
     for( unsigned int i = 1; i < len; ++i ) {
@@ -253,8 +260,9 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
             _isValid[i] = false;
         }
     }
-
+    std::cout << "Number of inliers after voting: " << counter << std::endl;
     outMatches = FImage(4, counter, 1); int inner_counter = 0;
+    std::cout << "Constructing output matches after voting\n";
     for( unsigned int i = 1; i < len; ++i ) {
         if(_isValid[i]){
             outMatches[inner_counter*4 + 0] = inpMatchesFilt[i](0);
@@ -264,7 +272,7 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
             inner_counter++;
         }
     }
-
+    std::cout << "Output matches constructed\n";
 }
 
 

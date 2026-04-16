@@ -69,6 +69,7 @@ void PointCloudHandler::planeNormalization(const std::string& cloud_key){
 
     Matrix3 A; A.col(0) = ex_B; A.col(1) = ey_B; A.col(2) = ez_B;
 
+    
     Transform R = Transform::Identity();
     R.rotate(A.transpose());
     R.translation() << Vector3(0,0,coefficients->values[3]);

@@ -26,29 +26,16 @@ int main(int argc, char **argv) {
     float YawNoiseMag = stof(YawNoiseMagStr)/10;
     string ExpIDStr = argv[5];
 
-    
-
-
     // Adding Noise to Initial Guess
     pclAligner.addNoise( mov_cloud, scaleMag, TranslNoiseMag, YawNoiseMag );
-    std::cout << "Initial Guess Noise Added with Scale Mag: " << scaleMag << " Translational Noise Mag: " << TranslNoiseMag << " Yaw Noise Mag: " << YawNoiseMag << "\n";
     pclAligner.computeAndApplyInitialRelativeGuess(fix_cloud, mov_cloud);
-    std::cout << "Initial Relative Guess Applied to Moving Cloud\n";
     pclAligner.computeExGFilteredPointCloud(mov_cloud, Vector3i(0,0,255));
-    std::cout << "Filtered ExG Cloud Computed for Moving Cloud\n";
     pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255,0,0));
-    std::cout << "Filtered ExG Cloud Computed for Fixed Cloud\n";
     pclAligner.computeEnvironmentalModels(mov_cloud, fix_cloud);
-    std::cout << "Environmental Models Computed\n";
-
-    
-
     pclAligner.Match(fix_cloud, mov_cloud, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300,1300) );
-    std::cout << "Point Cloud Matching Completed\n";
-    
+
     PointCloudViz viz;
     viz.setViewerBackground(255,255,255);
-    std::cout << "Visualizing Point Clouds\n";
     viz.showCloud( pclAligner.getFilteredPcl(fix_cloud), fix_cloud);
     viz.showCloud( pclAligner.getFilteredPcl(mov_cloud), mov_cloud);
     //viz.showCloud( pclAligner.getPcl(fix_cloud), fix_cloud);
