@@ -2,6 +2,8 @@
 #include "pointcloud_handler.h"
 #include "../python_handler/MatcherClient.h"
 
+
+
 class PointCloudAligner : public PointCloudHandler{
 
     public:
@@ -64,6 +66,7 @@ class PointCloudAligner : public PointCloudHandler{
 
         void finalRefinement(const std::string& cloud1_name,
                              const std::string& cloud2_name);
+        void getMatches(const std::string& cloud1_name, const std::string& cloud2_name);
 
         FImage img1, img1Cloud, img2, img2Cloud, matches, filteredMatches;
 
@@ -75,4 +78,6 @@ class PointCloudAligner : public PointCloudHandler{
         Vector3 _t;
 
         vector<Vector3> fix_pts, mov_pts;
+        
+        // Matching Mode        
 };

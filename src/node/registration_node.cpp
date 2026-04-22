@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255,0,0));
     pclAligner.computeEnvironmentalModels(mov_cloud, fix_cloud);
 
-    pclAligner.Match(fix_cloud, mov_cloud, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300,1300) );
+    pclAligner.Match(fix_cloud, mov_cloud, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300,1300));
 
     // PointCloudViz viz;
     // viz.setViewerBackground(255,255,255);

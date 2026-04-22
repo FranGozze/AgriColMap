@@ -92,56 +92,87 @@ void PointCloudAligner::addNoise(const std::string& cloud_key, const float& scal
     cerr << FBLU(" Scale Noise: ") << vS.transpose() << FBLU(" Scale Norm: ") << vS.norm() << "\n";
 }
 
-void PointCloudAligner::Match( const std::string& cloud1_name, const std::string& cloud2_name,
-                               const Eigen::Vector2f& scale, const string& iter_num, const cv::Size& size ){
-
-    cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
-    cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
-    MatcherClient matcher;
-    
+void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::string& cloud2_name)
+{   
     img1.imcopy( ERMap[cloud1_name]->getExgImg() );
     img2.imcopy( ERMap[cloud2_name]->getExgImg() );
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
     
-    MatchResult result = matcher.match(ERMap[cloud1_name]->getExgImg(), ERMap[cloud2_name]->getExgImg());
-    std::cout << "Matched " << result.pts1.size() << " points.\n";    
+    std::cout << "Matching Mode: " << matchingMode << "\n";
 
+    if (matchingMode == CPM_MATCHING)
+        cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
+    else
+    {
+        MatcherClient matcher;
+        MatchResult result = matcher.match(ERMap[cloud1_name]->getExgImg(), ERMap[cloud2_name]->getExgImg(), matchingMode);
+
+        FImage tmpMatch(4, result.pts1.size());
+        tmpMatch.setValue(-1);
+        for (size_t i = 0; i < result.pts1.size(); ++i) {
+            tmpMatch[i*4 + 0] = result.pts1[i].x;
+            tmpMatch[i*4 + 1] = result.pts1[i].y;
+            tmpMatch[i*4 + 2] = result.pts2[i].x;
+            tmpMatch[i*4 + 3] = result.pts2[i].y;
+        }
+        if (!matches.matchDimension(4, result.pts1.size(), 1))
+            matches.allocate(4, result.pts1.size(), 1);        
+        int tmpIdx = 0;
+        for (int i = 0; i < result.pts1.size(); i++){
+            if (tmpMatch[4 * i + 0] >= 0){
+                memcpy(matches.rowPtr(tmpIdx), tmpMatch.rowPtr(i), sizeof(int) * 4);
+                tmpIdx++;
+            }
+        }
+        std::cout << "Matched " << result.pts1.size() << " points.\n";    
+    }
+
+}
+
+void PointCloudAligner::Match( const std::string& cloud1_name, const std::string& cloud2_name,
+                               const Eigen::Vector2f& scale, const string& iter_num, const cv::Size& size){
+
+    cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
+    cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
+    
+    getMatches(cloud1_name, cloud2_name);
+                                    
     // cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
 
-    // if( _storeDenseOptFlw )
-    //     WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
+    if( _storeDenseOptFlw )
+        WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
 
-    // cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
+    cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
 
-    // cerr << "Total correspondences: " << matches.height() << " Outliers: " << matches.height() - filteredMatches.height() <<
-    //         " Inliers: " << filteredMatches.height() << "\n";
+    cerr << "Total correspondences: " << matches.height() << " Outliers: " << matches.height() - filteredMatches.height() <<
+            " Inliers: " << filteredMatches.height() << "\n";
 
-    // int len = filteredMatches.height();
-    // if(len < 10){
-    //     writeAffineTransform(iter_num, cloud2_name);
-    //     ExitWithErrorMsg("too few correspondences");
-    // }
+    int len = filteredMatches.height();
+    if(len < 10){
+        writeAffineTransform(iter_num, cloud2_name);
+        ExitWithErrorMsg("too few correspondences");
+    }
 
-    // if( _showDOFCorrespondences )
-    //     showDOFCorrespondeces(len, cloud1_name, cloud2_name, size);
+    if( _showDOFCorrespondences )
+        showDOFCorrespondeces(len, cloud1_name, cloud2_name, size);
 
-    // computeAndApplyDOFTransform(cloud1_name, cloud2_name, len);
-    // downsamplePCL(cloud1_name);
-    // downsamplePCL(cloud2_name);
+    computeAndApplyDOFTransform(cloud1_name, cloud2_name, len);
+    downsamplePCL(cloud1_name);
+    downsamplePCL(cloud2_name);
 
-    // auto compute_start = std::chrono::high_resolution_clock::now();
-    // finalRefinement(cloud1_name, cloud2_name);
-    // auto compute_end = std::chrono::high_resolution_clock::now();
-    // double compute_time = std::chrono::duration_cast<std::chrono::milliseconds>(compute_end - compute_start).count();
-    // if( getVerbosityLevel() ){
-    //     cerr << "\n";
-    //     std::cerr << FYEL("[SOLVER][compute]: Time Elapsed for finding a solution: ") << compute_time << " milliseconds" << std::endl;
-    //     std::cerr << FBLU("Final Affine Matrix: ") << "\n" << _R << "\n";
-    //     std::cerr << FBLU("Final Translation: ") << _t.transpose() << "\n";
-    //     std::cerr << FBLU("Initial Scale: ") << scale.transpose() << "\n";
-    // }
-    // writeAffineTransform(iter_num, cloud2_name);
+    auto compute_start = std::chrono::high_resolution_clock::now();
+    finalRefinement(cloud1_name, cloud2_name);
+    auto compute_end = std::chrono::high_resolution_clock::now();
+    double compute_time = std::chrono::duration_cast<std::chrono::milliseconds>(compute_end - compute_start).count();
+    if( getVerbosityLevel() ){
+        cerr << "\n";
+        std::cerr << FYEL("[SOLVER][compute]: Time Elapsed for finding a solution: ") << compute_time << " milliseconds" << std::endl;
+        std::cerr << FBLU("Final Affine Matrix: ") << "\n" << _R << "\n";
+        std::cerr << FBLU("Final Translation: ") << _t.transpose() << "\n";
+        std::cerr << FBLU("Initial Scale: ") << scale.transpose() << "\n";
+    }
+    writeAffineTransform(iter_num, cloud2_name);
 }
 
 void PointCloudAligner::showDOFCorrespondeces(const int& len, const std::string& cloud1_name, const std::string& cloud2_name, const cv::Size& size){

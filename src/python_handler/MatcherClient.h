@@ -25,7 +25,7 @@ class MatcherClient {
 public:
     MatcherClient(const std::string& address = "tcp://localhost:5555");
 
-    MatchResult match(const cv::Mat& img1, const cv::Mat& img2);
+    MatchResult match(const cv::Mat& img1, const cv::Mat& img2, const int mode = 1);
 
 private:
     std::string address;

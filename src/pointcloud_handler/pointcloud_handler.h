@@ -4,6 +4,8 @@
 
 using namespace std;
 
+enum MatchMode { CPM_MATCHING = 0, SUPERGLUE_MATCHING = 1, ROMA_MATCHING = 2 }; 
+
 class PointCloudHandler{
 
     public:
@@ -91,5 +93,7 @@ class PointCloudHandler{
 
         // Relative Scale
         Vector2 _init_mov_scale;
+
+        int matchingMode = CPM_MATCHING;
 
 };

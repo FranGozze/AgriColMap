@@ -34,7 +34,7 @@ std::string MatcherClient::encodeImage(const cv::Mat& img) {
     return base64_encode(buffer);
 }
 
-MatchResult MatcherClient::match(const cv::Mat& img1, const cv::Mat& img2) {
+MatchResult MatcherClient::match(const cv::Mat& img1, const cv::Mat& img2, const int mode) {
     zmq::context_t context(1);
     zmq::socket_t socket(context, ZMQ_REQ);
 
@@ -43,6 +43,7 @@ MatchResult MatcherClient::match(const cv::Mat& img1, const cv::Mat& img2) {
     nlohmann::json request;
     request["img1"] = encodeImage(img1);
     request["img2"] = encodeImage(img2);
+    request["mode"] = mode;
 
     std::string req_str = request.dump();
     socket.send(zmq::buffer(req_str), zmq::send_flags::none);
