@@ -16,6 +16,12 @@ include_directories(
 )
 find_package(yaml-cpp REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ZMQ REQUIRED libzmq)
+
+find_package(cppzmq REQUIRED)
+find_package(nlohmann_json REQUIRED)
+
 # BUILD With the ad-hod PCL installation
 if(BUILD_WITH_PCL)
   add_definitions(-DBUILD_WITH_PCL )
@@ -45,6 +51,7 @@ else()
   find_package(PCL REQUIRED) 
   include_directories(${PCL_INCLUDE_DIRS})
   message("${PROJECT_NAME}|PCL version ${PCL_VERSION}")
+  
 endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)

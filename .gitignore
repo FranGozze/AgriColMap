@@ -6,3 +6,7 @@ src/packageDir.h
 maps/*
 opencv/
 opencv_contrib/
+data/
+params/output/results/*
+params/output/RosarioV2Ground/*
+python/venv/

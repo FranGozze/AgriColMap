@@ -6,7 +6,7 @@ input_clouds:
   cloud_fixed_name:                   dron_points_xyz
   cloud_moving_path:                  RosarioV2Ground
   cloud_moving_name:                  processed_xyz_rotated
-  relative_scale:	  	      [2, 2] 
+  relative_scale:	  	      [1, 1] 
 
 ## Other Parameters
 aligner_params:  

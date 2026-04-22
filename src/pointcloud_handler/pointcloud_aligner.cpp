@@ -97,46 +97,51 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
 
     cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
     cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
+    MatcherClient matcher;
+    
     img1.imcopy( ERMap[cloud1_name]->getExgImg() );
     img2.imcopy( ERMap[cloud2_name]->getExgImg() );
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
+    
+    MatchResult result = matcher.match(ERMap[cloud1_name]->getExgImg(), ERMap[cloud2_name]->getExgImg());
+    std::cout << "Matched " << result.pts1.size() << " points.\n";    
 
-    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
+    // cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
 
-    if( _storeDenseOptFlw )
-        WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
+    // if( _storeDenseOptFlw )
+    //     WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
 
-    cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
+    // cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
 
-    cerr << "Total correspondences: " << matches.height() << " Outliers: " << matches.height() - filteredMatches.height() <<
-            " Inliers: " << filteredMatches.height() << "\n";
+    // cerr << "Total correspondences: " << matches.height() << " Outliers: " << matches.height() - filteredMatches.height() <<
+    //         " Inliers: " << filteredMatches.height() << "\n";
 
-    int len = filteredMatches.height();
-    if(len < 10){
-        writeAffineTransform(iter_num, cloud2_name);
-        ExitWithErrorMsg("too few correspondences");
-    }
+    // int len = filteredMatches.height();
+    // if(len < 10){
+    //     writeAffineTransform(iter_num, cloud2_name);
+    //     ExitWithErrorMsg("too few correspondences");
+    // }
 
-    if( _showDOFCorrespondences )
-        showDOFCorrespondeces(len, cloud1_name, cloud2_name, size);
+    // if( _showDOFCorrespondences )
+    //     showDOFCorrespondeces(len, cloud1_name, cloud2_name, size);
 
-    computeAndApplyDOFTransform(cloud1_name, cloud2_name, len);
-    downsamplePCL(cloud1_name);
-    downsamplePCL(cloud2_name);
+    // computeAndApplyDOFTransform(cloud1_name, cloud2_name, len);
+    // downsamplePCL(cloud1_name);
+    // downsamplePCL(cloud2_name);
 
-    auto compute_start = std::chrono::high_resolution_clock::now();
-    finalRefinement(cloud1_name, cloud2_name);
-    auto compute_end = std::chrono::high_resolution_clock::now();
-    double compute_time = std::chrono::duration_cast<std::chrono::milliseconds>(compute_end - compute_start).count();
-    if( getVerbosityLevel() ){
-        cerr << "\n";
-        std::cerr << FYEL("[SOLVER][compute]: Time Elapsed for finding a solution: ") << compute_time << " milliseconds" << std::endl;
-        std::cerr << FBLU("Final Affine Matrix: ") << "\n" << _R << "\n";
-        std::cerr << FBLU("Final Translation: ") << _t.transpose() << "\n";
-        std::cerr << FBLU("Initial Scale: ") << scale.transpose() << "\n";
-    }
-    writeAffineTransform(iter_num, cloud2_name);
+    // auto compute_start = std::chrono::high_resolution_clock::now();
+    // finalRefinement(cloud1_name, cloud2_name);
+    // auto compute_end = std::chrono::high_resolution_clock::now();
+    // double compute_time = std::chrono::duration_cast<std::chrono::milliseconds>(compute_end - compute_start).count();
+    // if( getVerbosityLevel() ){
+    //     cerr << "\n";
+    //     std::cerr << FYEL("[SOLVER][compute]: Time Elapsed for finding a solution: ") << compute_time << " milliseconds" << std::endl;
+    //     std::cerr << FBLU("Final Affine Matrix: ") << "\n" << _R << "\n";
+    //     std::cerr << FBLU("Final Translation: ") << _t.transpose() << "\n";
+    //     std::cerr << FBLU("Initial Scale: ") << scale.transpose() << "\n";
+    // }
+    // writeAffineTransform(iter_num, cloud2_name);
 }
 
 void PointCloudAligner::showDOFCorrespondeces(const int& len, const std::string& cloud1_name, const std::string& cloud2_name, const cv::Size& size){
