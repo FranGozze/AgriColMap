@@ -105,8 +105,9 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
         cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
     else
     {
+        std::cout << "Using client matcher \n";
         MatcherClient matcher;
-        MatchResult result = matcher.match(ERMap[cloud1_name]->getExgImg(), ERMap[cloud2_name]->getExgImg(), matchingMode);
+        MatchResult result = matcher.match(ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg(), matchingMode);
 
         FImage tmpMatch(4, result.pts1.size());
         tmpMatch.setValue(-1);

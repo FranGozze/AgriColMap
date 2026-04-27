@@ -10,3 +10,7 @@ data/
 params/output/results/*
 params/output/RosarioV2Ground/*
 python/venv/
+python/SuperGluePretrainedNetwork/
+python/RoMa
+python/__pycache__/
+python/received_*
