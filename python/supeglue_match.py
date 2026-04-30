@@ -1,42 +1,24 @@
 from SuperGluePretrainedNetwork.models.superpoint import SuperPoint
 from SuperGluePretrainedNetwork.models.superglue import SuperGlue
-from SuperGluePretrainedNetwork.models.utils import (frame2tensor, make_matching_plot_fast)
+from SuperGluePretrainedNetwork.models.utils import (frame2tensor, make_matching_plot)
 from SuperGluePretrainedNetwork.models.matching import Matching
 import torch
+import cv2
 
+import matplotlib.cm as cm
 
 # THIS is to avoid loading the SuperGlue model multiple times if the function is called repeatedly
 
-_MODEL_INSTANCE = None
 
-def get_matching_model(device='cpu'):
-    global _MODEL_INSTANCE
-    if _MODEL_INSTANCE is None:
-        config = {
-        'superpoint': {
-            'nms_radius': 2,
-            'keypoint_threshold': 0.001,
-            'max_keypoints': 2048,
-        },
-        'superglue': {
-            'weights': 'outdoor',
-            'sinkhorn_iterations': 50,
-            'match_threshold': 0.15,
-        }
-    }
-        # This only runs the very first time the function is called
-        _MODEL_INSTANCE = Matching(config).eval().to(device)
-    return _MODEL_INSTANCE
-
-def superglue_match(img1, img2, device='cpu'):
+def superglue_match(img1, img2, device='cpu', output=None):
     """
     Compute matches between two images using SuperPoint + SuperGlue.
 
     Returns
     -------
+    matches : list(cv2.DMatch)
     pts1 : Nx2 numpy array
     pts2 : Nx2 numpy array
-    matches : list(cv2.DMatch)
     """
 
     
@@ -46,11 +28,13 @@ def superglue_match(img1, img2, device='cpu'):
     # superpoint = SuperPoint(config['superpoint']).eval().to(device)
     # superglue = SuperGlue(config['superglue']).eval().to(device)
 
-    # --- Convert to grayscale ---
-    if img1.ndim == 3:
-        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    if img2.ndim == 3:
-        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    if isinstance(img1, str):
+        img1 = cv2.imread(img1, cv2.IMREAD_GRAYSCALE)
+    if isinstance(img2, str):
+        img2 = cv2.imread(img2, cv2.IMREAD_GRAYSCALE)
+
+    cv2.imwrite("debug_img1.jpg", img1)
+    cv2.imwrite("debug_img2.jpg", img2)
 
     img1_tensor = frame2tensor(img1, device)
     img2_tensor = frame2tensor(img2, device)
@@ -60,6 +44,7 @@ def superglue_match(img1, img2, device='cpu'):
     pred = matching({'image0': img1_tensor, 'image1': img2_tensor})
     
     # Extract data to CPU/Numpy
+    confidence = pred['matching_scores0'][0].detach().numpy()
     pred = {k: v[0].cpu().detach().numpy() for k, v in pred.items()}
     kpts0, kpts1 = pred['keypoints0'], pred['keypoints1']
     matches, conf = pred['matches0'], pred['matching_scores0']
@@ -68,6 +53,16 @@ def superglue_match(img1, img2, device='cpu'):
     mkpts0 = kpts0[valid]           # Coordinates in Image 1
     mkpts1 = kpts1[matches[valid]]  # Corresponding coordinates in Image 2
     
+    
+    color = cm.jet(confidence[valid])
+    text = [
+        'SuperGlue',
+        'Keypoints: {}:{}'.format(len(kpts0), len(kpts1)),
+        'Matches: {}'.format(len(mkpts0))
+    ]
+
+    make_matching_plot(img1, img2, kpts0, kpts1, mkpts0, mkpts1, color, text, output)
+
     kp1 = [cv2.KeyPoint(float(pt[0]), float(pt[1]), 1) for pt in mkpts0]
     kp2 = [cv2.KeyPoint(float(pt[0]), float(pt[1]), 1) for pt in mkpts1]
     
