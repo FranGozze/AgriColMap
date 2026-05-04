@@ -7,6 +7,8 @@ import json
 from supeglue_match import superglue_match
 from roma_match import roma_match
 
+import struct
+
 # ---- Replace this with RoMa / SuperGlue ----
 def dummy_match(img1, img2):
     # Fake matcher (replace with real model)
@@ -17,15 +19,35 @@ def dummy_match(img1, img2):
 
 # -------------------------------------------
 
+daisy = cv2.xfeatures2d.DAISY_create(
+    radius=5,
+    q_radius=3,
+    q_theta=4,
+    q_hist=8,
+    norm=cv2.xfeatures2d.DAISY_NRM_FULL,
+    interpolation=False,
+    use_orientation=False
+)
+
+
 # ---- Dummy feature extractor (replace with RoMa/SuperGlue backbone) ----
-def extract_features(img_exg, img_elev, cloud_ratio):
-    H, W = img_exg.shape[:2]
+def extract_features(img_exg, cloud_ratio=0.0):
+    keypoints = []
+    h, w = img_exg.shape[:2]
 
-    # Replace with real model
-    feat_exg = np.random.rand(H, W, 104).astype(np.float32)
-    feat_elev = np.random.rand(H, W, 33).astype(np.float32)
+    # Dense grid: one keypoint per pixel (like your C++ loop)
+    for y in range(h):
+        for x in range(w):
+            keypoints.append(cv2.KeyPoint(float(x), float(y), 1))
 
-    return feat_exg, feat_elev
+    descriptors = daisy.compute(img_exg, keypoints)[1]
+    # shape: (H*W, 104)
+
+    # reshape to H x W x 104
+    descriptors = descriptors.reshape(h, w, -1)
+
+    return descriptors.astype(np.float32)
+
 # -----------------------------------------------------------------------
 
 def decode_image(b64):
@@ -39,13 +61,10 @@ socket.bind("tcp://*:5555")
 
 print("Python matcher server running...")
 
-# matches, kp1, kp2 = superglue_match("received_img1_exg.jpg", "received_img2_exg.jpg", output="superglue_matches_exg.jpg")
-# matches, kp1, kp2 = roma_match("received_img1_exg.jpg", "received_img2_exg.jpg", output="roma_matches_exg.jpg")
-# print("Test run of SuperGlue matcher. Matched points:", len(matches), "Matches:", matches)
-
 
 
 img_counter = 0
+
 
 while True:
     message = socket.recv_json()
@@ -53,24 +72,27 @@ while True:
     img_exg = decode_image(message["img_exg"])
     img_elev = decode_image(message["img_elev"])
     cloudRatio = message["cloud_ratio"]
+    # cv2.imwrite(f"received_img_{img_counter}.jpg", img_exg)
+    
+    # print("Extracted features: ", feat_exg)
 
-    print("Received matching request. Image shapes:", img_exg.shape, img_elev.shape, "C:", cloudRatio)
+    H, W = img_exg.shape[:2]
+    feat_elev = np.zeros((H, W, 33), dtype=np.float32)
 
-    # cv2.imwrite(f"received_img_{img_counter}.jpg", img)
-    # cv2.imwrite(f"received_img2_{img_counter}.jpg", img2)
-    # matches, kp1, kp2 = superglue_match(img, img2)
-    # matches, kp1, kp2 = roma_match(img, img2, "cpu", output=f"roma_matches_{img_counter}.jpg")
-    # pts1, pts2 = dummy_match(img, img2)
+    # ---- OPTIONAL: convert to uint8 here (faster) ----
+    feat_exg = np.clip(feat_exg * 255, 0, 255).astype(np.uint8)
+    feat_elev = feat_elev.astype(np.uint8)
 
-    features_exg, features_elev = extract_features(img_exg, img_elev, cloudRatio)
+    H, W, C1 = feat_exg.shape
+    _, _, C2 = feat_elev.shape
 
-    response = {
-    "shape_exg": [img_exg.shape[0], img_exg.shape[1], 104],
-    "data_exg": features_exg.flatten().tolist(),
-    "shape_elev": [img_elev.shape[0], img_elev.shape[1], 33],
-    "data_elev": features_elev.flatten().tolist()
-    }
+    header = struct.pack("6i", H, W, C1, H, W, C2)
 
-    socket.send_json(response)
-    print("Processed a matching request. Features shape:", features_exg.shape, features_elev.shape)
+    socket.send_multipart([
+        header,
+        feat_exg.tobytes(),
+        feat_elev.tobytes()
+    ])
+
+    print("Processed a matching request. Features shape:", feat_exg.shape, feat_elev.shape)
     img_counter += 1

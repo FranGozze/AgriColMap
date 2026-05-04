@@ -25,26 +25,8 @@ PythonClient::PythonClient(const std::string& addr)
 
 
 std::string PythonClient::encodeFImage(const FImage& img) {
-    int w = img.width();
-    int h = img.height();
-    int c = img.nchannels();
-
-    std::vector<unsigned char> buffer;
-    buffer.reserve(w * h * c);
-
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            int idx = (i * w + j) * c;
-
-            for (int k = 0; k < c; k++) {
-                float val = img.pData[idx + k];
-                val = std::max(0.f, std::min(1.f, val));
-                buffer.push_back(static_cast<unsigned char>(val * 255.f));
-            }
-        }
-    }
-
-    return base64_encode(buffer);
+    
+    return encodeImage(ImageIO::CvmatFromPixels(img.pData,img.width(),img.height(),img.nchannels()));
 }
 
 std::string PythonClient::encodeImage(const cv::Mat& img) {
@@ -75,50 +57,47 @@ void PythonClient::extract(
     std::string req_str = request.dump();
     socket.send(zmq::buffer(req_str), zmq::send_flags::none);
 
-    zmq::message_t reply;
-    socket.recv(reply);
 
-    auto response = nlohmann::json::parse(
-        std::string(static_cast<char*>(reply.data()), reply.size())
-    );
+    zmq::message_t header_msg;
+    zmq::message_t exg_msg;
+    zmq::message_t elev_msg;
 
-    // ---- EXG FEATURES ----
-    int h_exg = response["shape_exg"][0];
-    int w_exg = response["shape_exg"][1];
-    int c_exg = response["shape_exg"][2]; // should be 104
+    socket.recv(header_msg);
+    socket.recv(exg_msg);
+    socket.recv(elev_msg);
 
-    outFtImg_Exg.allocate(w_exg, h_exg, c_exg);
+    // ---- parse header ----
+    int dims[6];
+    std::memcpy(dims, header_msg.data(), sizeof(dims));
 
-    std::vector<float> data_exg = response["data_exg"];
+    int H = dims[0];
+    int W = dims[1];
+    int C1 = dims[2];
+    int H2 = dims[3];
+    int W2 = dims[4];
+    int C2 = dims[5];
+    std::cout << "Received header: H=" << H << ", W=" << W << ", C1=" << C1
+              << ", H2=" << H2 << ", W2=" << W2 << ", C2=" << C2 << std::endl;
+    // ---- allocate outputs ----
+    outFtImg_Exg.allocate(W, H, C1);
+    outFtImg_Elev.allocate(W2, H2, C2);
+        std::cout << "Allocated output image memory" << std::endl;
 
-    for (int i = 0; i < h_exg; i++) {
-        for (int j = 0; j < w_exg; j++) {
-            int idx = i * w_exg + j;
-            for (int k = 0; k < c_exg; k++) {
-                outFtImg_Exg.pData[idx * c_exg + k] =
-                    static_cast<unsigned char>(std::round(data_exg[idx * c_exg + k] * 255));
-            }
-        }
-    }
+    // ---- copy directly into UCImage ----
+    size_t size_exg = H * W * C1 * sizeof(float);
+    size_t size_elev = H2 * W2 * C2 * sizeof(float);
 
-    // ---- ELEV FEATURES ----
-    int h_el = response["shape_elev"][0];
-    int w_el = response["shape_elev"][1];
-    int c_el = response["shape_elev"][2]; // 33
+    // const float* elev_ptr = static_cast<float*>(elev_msg.data());
+    std::cout << "Received feature data: exg size=" << size_exg << ", elev size=" << size_elev << std::endl;
 
-    outFtImg_Elev.allocate(w_el, h_el, c_el);
+    std::memcpy(outFtImg_Exg.pData, exg_msg.data(), H*W*104);
+    std::cout << "Copied EXG feature data" << std::endl;
+    // for (int i = 0; i < H2 * W2 * C2; i++) {
+    //     outFtImg_Elev.pData[i] =
+    //         static_cast<unsigned char>(std::round(elev_ptr[i] * 255));
+    // }
+    std::cout << "Copied ELEV feature data" << std::endl;
 
-    std::vector<float> data_el = response["data_elev"];
-
-    for (int i = 0; i < h_el; i++) {
-        for (int j = 0; j < w_el; j++) {
-            int idx = i * w_el + j;
-            for (int k = 0; k < c_el; k++) {
-                outFtImg_Elev.pData[idx * c_el + k] =
-                    static_cast<unsigned char>(std::round(data_el[idx * c_el + k] * 255));
-            }
-        }
-    }
 }
 
 

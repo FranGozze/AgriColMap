@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 #include "ImageFeature.h"
+#include "ImageIO.h"
 
 #include <zmq.hpp>
 #include <iostream>
