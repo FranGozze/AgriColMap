@@ -27,6 +27,8 @@ CPM::CPM()
     _im2_elev = NULL;
     _pydSeedsFlow = NULL;
     _pydSeedsFlow2 = NULL;
+
+    pythonClient = PythonClient();
 }
 
 CPM::~CPM()
@@ -268,7 +270,7 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
 }
 
 
-int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Cloud, FImage& outMatches)
+int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Cloud, FImage& outMatches, int featureMode)    
 {
 
     if( !_useVisFeats && !_useGeomFeats){
@@ -306,8 +308,14 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
     float cloud_ratio = 0.f;
     for (int i = 0; i < nLevels; i++){
         cloud_ratio = i * (1/_pydRatio);
-        imDaisy(_pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]);
-        imDaisy(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
+        if (featureMode == DAISY_FEATURE){
+            imDaisy(_pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]);
+            imDaisy(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
+        }
+        else{
+            pythonClient.extract(_pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]);
+            pythonClient.extract(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
+        }
         // 		ImageFeature::imSIFT(_pyd1[i], _im1f[i], 2, 1, true, 8);
         // 		ImageFeature::imSIFT(_pyd2[i], _im2f[i], 2, 1, true, 8);
     }
@@ -405,6 +413,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
         float x2 = x + u;
         float y2 = y + v;
         if (abs(u) < UNKNOWN_FLOW && abs(v) < UNKNOWN_FLOW){
+            // std::cout << "seed " << i << ": (" << x << "," << y << ") -> (" << x2 << "," << y2 << ")" << std::endl;
             tmpMatch[4 * i + 0] = x;
             tmpMatch[4 * i + 1] = y;
             tmpMatch[4 * i + 2] = x2;
@@ -415,6 +424,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
     if (!outMatches.matchDimension(4, validMatCnt, 1)){
         outMatches.allocate(4, validMatCnt, 1);
     }
+
     int tmpIdx = 0;
     for (int i = 0; i < numV; i++){
         if (tmpMatch[4 * i + 0] >= 0){
@@ -494,6 +504,8 @@ void CPM::imDaisy(FImage& img, FImage& imgCloud, const float& cloud_ratio, UCIma
         cv::Ptr<cv::xfeatures2d::DAISY> daisy =	cv::xfeatures2d::DAISY::create(5, 3, 4, 8, cv::xfeatures2d::DAISY::NRM_FULL, cv::noArray(), false, false);
         cv::Mat outFeatures_Exg;
         daisy->compute(cvImg_Exg, outFeatures_Exg);
+        std::cout << "W x H x C: " << w << " x " << h << " x " << channels << std::endl;
+        std::cout << "Computed features for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << std::endl;
 
         int itSize = outFeatures_Exg.cols;
         //outFtImg_Exg.allocate(w, h, itSize);

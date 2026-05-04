@@ -17,6 +17,17 @@ def dummy_match(img1, img2):
 
 # -------------------------------------------
 
+# ---- Dummy feature extractor (replace with RoMa/SuperGlue backbone) ----
+def extract_features(img_exg, img_elev, cloud_ratio):
+    H, W = img_exg.shape[:2]
+
+    # Replace with real model
+    feat_exg = np.random.rand(H, W, 104).astype(np.float32)
+    feat_elev = np.random.rand(H, W, 33).astype(np.float32)
+
+    return feat_exg, feat_elev
+# -----------------------------------------------------------------------
+
 def decode_image(b64):
     data = base64.b64decode(b64)
     np_arr = np.frombuffer(data, np.uint8)
@@ -39,21 +50,27 @@ img_counter = 0
 while True:
     message = socket.recv_json()
 
-    img1 = decode_image(message["img1"])
-    img2 = decode_image(message["img2"])
-    print("Received matching request. Image shapes:", img1.shape, img2.shape)
+    img_exg = decode_image(message["img_exg"])
+    img_elev = decode_image(message["img_elev"])
+    cloudRatio = message["cloud_ratio"]
 
-    cv2.imwrite(f"received_img1_{img_counter}.jpg", img1)
-    cv2.imwrite(f"received_img2_{img_counter}.jpg", img2)
-    # matches, kp1, kp2 = superglue_match(img1, img2)
-    matches, kp1, kp2 = roma_match(img1, img2, "cpu", output=f"roma_matches_{img_counter}.jpg")
-    # pts1, pts2 = dummy_match(img1, img2)
+    print("Received matching request. Image shapes:", img_exg.shape, img_elev.shape, "C:", cloudRatio)
+
+    # cv2.imwrite(f"received_img_{img_counter}.jpg", img)
+    # cv2.imwrite(f"received_img2_{img_counter}.jpg", img2)
+    # matches, kp1, kp2 = superglue_match(img, img2)
+    # matches, kp1, kp2 = roma_match(img, img2, "cpu", output=f"roma_matches_{img_counter}.jpg")
+    # pts1, pts2 = dummy_match(img, img2)
+
+    features_exg, features_elev = extract_features(img_exg, img_elev, cloudRatio)
 
     response = {
-        "pts1": kp1.tolist(),
-        "pts2": kp2.tolist()
+    "shape_exg": [img_exg.shape[0], img_exg.shape[1], 104],
+    "data_exg": features_exg.flatten().tolist(),
+    "shape_elev": [img_elev.shape[0], img_elev.shape[1], 33],
+    "data_elev": features_elev.flatten().tolist()
     }
 
     socket.send_json(response)
-    print("Processed a matching request. Matched points:", len(matches), "Mathes:" , matches)
+    print("Processed a matching request. Features shape:", features_exg.shape, features_elev.shape)
     img_counter += 1

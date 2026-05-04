@@ -40,6 +40,10 @@ corresponding to one match per line.
 	#include <pcl/features/fpfh_omp.h>
 #endif
 
+#include "PythonClient.hpp"
+
+enum FeatureMode { DAISY_FEATURE = 0, SUPERPOINT_FEATURE = 1}; 
+
 class CPM
 {
 public:
@@ -47,7 +51,7 @@ public:
 	~CPM();
 
     void Match2Flow(FImage& inMat, FImage& ou, FImage& ov, int w, int h);
-    int Matching(FImage& img1, FImage &img1Cloud, FImage& img2, FImage &img2Cloud, FImage& outMatches);
+    int Matching(FImage& img1, FImage &img1Cloud, FImage& img2, FImage &img2Cloud, FImage& outMatches, int featureMode);
     void VotingSchemeHough(FImage& inpMatches, FImage& outMatches, const cv::Mat &rgb, const cv::Mat &rgb2);
     void VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat &rgb, const cv::Mat &rgb2);
     void addFlowToAccumulator(const Eigen::Vector2f& pt, cv::Mat& acc);
@@ -117,6 +121,9 @@ private:
 
     float _vis_weight;
     float _geom_weight;
+
+	PythonClient pythonClient;
+	
 
 };
 
