@@ -1,2 +1,2 @@
 add_library(pointcloud_aligner_lib SHARED pointcloud_handler.cpp pointcloud_aligner.cpp)
-target_link_libraries(pointcloud_aligner_lib environment_representation_lib MatcherClient cpm_lib Library-C++)
+target_link_libraries(pointcloud_aligner_lib environment_representation_lib  cpm_lib Library-C++)

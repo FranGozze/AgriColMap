@@ -99,35 +99,37 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
     
+
     std::cout << "Matching Mode: " << matchingMode << "\n";
 
-    if (matchingMode == CPM_MATCHING)
-        cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
-    else
-    {
-        std::cout << "Using client matcher \n";
-        MatcherClient matcher;
-        MatchResult result = matcher.match(ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg(), matchingMode);
+    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);
+    // if (matchingMode == CPM_MATCHING)
+    //     cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
+    // else
+    // {
+    //     std::cout << "Using client matcher \n";
+    //     MatcherClient matcher;
+    //     MatchResult result = matcher.match(ERMap[cloud1_name]->getExgImg(), ERMap[cloud2_name]->getExgImg(), matchingMode);
 
-        FImage tmpMatch(4, result.pts1.size());
-        tmpMatch.setValue(-1);
-        for (size_t i = 0; i < result.pts1.size(); ++i) {
-            tmpMatch[i*4 + 0] = result.pts1[i].x;
-            tmpMatch[i*4 + 1] = result.pts1[i].y;
-            tmpMatch[i*4 + 2] = result.pts2[i].x;
-            tmpMatch[i*4 + 3] = result.pts2[i].y;
-        }
-        if (!matches.matchDimension(4, result.pts1.size(), 1))
-            matches.allocate(4, result.pts1.size(), 1);        
-        int tmpIdx = 0;
-        for (int i = 0; i < result.pts1.size(); i++){
-            if (tmpMatch[4 * i + 0] >= 0){
-                memcpy(matches.rowPtr(tmpIdx), tmpMatch.rowPtr(i), sizeof(int) * 4);
-                tmpIdx++;
-            }
-        }
-        std::cout << "Matched " << result.pts1.size() << " points.\n";    
-    }
+    //     FImage tmpMatch(4, result.pts1.size());
+    //     tmpMatch.setValue(-1);
+    //     for (size_t i = 0; i < result.pts1.size(); ++i) {
+    //         tmpMatch[i*4 + 0] = result.pts1[i].x;
+    //         tmpMatch[i*4 + 1] = result.pts1[i].y;
+    //         tmpMatch[i*4 + 2] = result.pts2[i].x;
+    //         tmpMatch[i*4 + 3] = result.pts2[i].y;
+    //     }
+    //     if (!matches.matchDimension(4, result.pts1.size(), 1))
+    //         matches.allocate(4, result.pts1.size(), 1);        
+    //     int tmpIdx = 0;
+    //     for (int i = 0; i < result.pts1.size(); i++){
+    //         if (tmpMatch[4 * i + 0] >= 0){
+    //             memcpy(matches.rowPtr(tmpIdx), tmpMatch.rowPtr(i), sizeof(int) * 4);
+    //             tmpIdx++;
+    //         }
+    //     }
+    //     std::cout << "Matched " << result.pts1.size() << " points.\n";    
+    // }
 
 }
 
