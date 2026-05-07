@@ -4,10 +4,9 @@ import cv2
 import base64
 import json
 
-from supeglue_match import superglue_match
-from roma_match import roma_match
-
 import struct
+
+import utils
 
 # ---- Replace this with RoMa / SuperGlue ----
 def dummy_match(img1, img2):
@@ -19,41 +18,10 @@ def dummy_match(img1, img2):
 
 # -------------------------------------------
 
-daisy = cv2.xfeatures2d.DAISY_create(
-    radius=5,
-    q_radius=3,
-    q_theta=4,
-    q_hist=8,
-    norm=cv2.xfeatures2d.DAISY_NRM_FULL,
-    interpolation=False,
-    use_orientation=False
-)
-
-
-# ---- Dummy feature extractor (replace with RoMa/SuperGlue backbone) ----
-def extract_features(img_exg, cloud_ratio=0.0):
-    keypoints = []
-    h, w = img_exg.shape[:2]
-
-    # Dense grid: one keypoint per pixel (like your C++ loop)
-    for y in range(h):
-        for x in range(w):
-            keypoints.append(cv2.KeyPoint(float(x), float(y), 1))
-
-    descriptors = daisy.compute(img_exg, keypoints)[1]
-    # shape: (H*W, 104)
-
-    # reshape to H x W x 104
-    descriptors = descriptors.reshape(h, w, -1)
-
-    return descriptors.astype(np.float32)
 
 # -----------------------------------------------------------------------
 
-def decode_image(b64):
-    data = base64.b64decode(b64)
-    np_arr = np.frombuffer(data, np.uint8)
-    return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
@@ -62,18 +30,22 @@ socket.bind("tcp://*:5555")
 print("Python matcher server running...")
 
 
-
 img_counter = 0
 
 
 while True:
+# if True:
     message = socket.recv_json()
 
-    img_exg = decode_image(message["img_exg"])
-    img_elev = decode_image(message["img_elev"])
+    img_exg = utils.decode_image(message["img_exg"])
+    img_elev = utils.decode_image(message["img_elev"])
     cloudRatio = message["cloud_ratio"]
-    # cv2.imwrite(f"received_img_{img_counter}.jpg", img_exg)
-    
+    # cv2.imwrite(f"imgs/received_img_{img_counter}.jpg", img_exg)
+    # img_exg = cv2.imread("test_img_exg.jpg", cv2.IMREAD_COLOR)  # For testing without ZMQ
+
+    # feat_exg = dino_interface.extract_features(img_exg)    
+    feat_exg = utils.extract_dense_sift(img_exg)
+    # feat_exg = resnet_interface.extract_multiscale(img_exg)
     # print("Extracted features: ", feat_exg)
 
     H, W = img_exg.shape[:2]
