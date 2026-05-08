@@ -21,7 +21,15 @@ def dummy_match(img1, img2):
 
 # -----------------------------------------------------------------------
 
-
+# List of extract functions:
+# - extract_daisy
+# - extract_superpoint      -- Doesn't work!!
+# - extract_resnet_multiscale
+# - extract_resnet (single scale, for testing)
+# - extract_dino            -- Doesn't work!!
+# - extract_gradients       -- Has been tested and works, but the results are bad
+# - extract_hog             -- Doesn't work!!
+# - extract_dense_sift
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
@@ -44,7 +52,7 @@ while True:
     # img_exg = cv2.imread("test_img_exg.jpg", cv2.IMREAD_COLOR)  # For testing without ZMQ
 
     # feat_exg = dino_interface.extract_features(img_exg)    
-    feat_exg = utils.extract_dense_sift(img_exg)
+    feat_exg = utils.extract_resnet(img_exg)
     # feat_exg = resnet_interface.extract_multiscale(img_exg)
     # print("Extracted features: ", feat_exg)
 

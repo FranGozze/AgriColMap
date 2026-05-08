@@ -6,12 +6,7 @@ import numpy as np
 
 _MODEL_INSTANCE = None
 
-def get_matching_model(device='cpu'):
-    global _MODEL_INSTANCE
-    if _MODEL_INSTANCE is None:
-        # This only runs the very first time the function is called
-        _MODEL_INSTANCE =  roma_outdoor(device=device)
-    return _MODEL_INSTANCE
+
 
 def show_matches(img1, img2, pts1, pts2, output=None):
     # Create a visualization of the matches

@@ -39,7 +39,8 @@ def get_matching_model(model_name=''):
             from roma_match import roma_outdoor
             _MODEL_INSTANCE =  roma_outdoor(device=device)
         elif model_name == 'dino':
-            _MODEL_INSTANCE = torch.hub.load('facebookresearch/dino:main', 'dino_vits16').eval().to(device)
+            _MODEL_INSTANCE = torch.hub.load('facebookresearch/dino:main', 'dino_vits8')
+            _MODEL_INSTANCE.eval().to(device)
         elif model_name == 'superpoint':
             _MODEL_INSTANCE =  SuperPoint(max_num_keypoints=None).eval().to(device)
         elif model_name == 'resnet_multiscale':

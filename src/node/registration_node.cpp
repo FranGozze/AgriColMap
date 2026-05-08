@@ -35,13 +35,13 @@ int main(int argc, char **argv) {
 
     pclAligner.Match(fix_cloud, mov_cloud, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300,1300));
 
-    // PointCloudViz viz;
-    // viz.setViewerBackground(255,255,255);
-    // viz.showCloud( pclAligner.getFilteredPcl(fix_cloud), fix_cloud);
-    // viz.showCloud( pclAligner.getFilteredPcl(mov_cloud), mov_cloud);
-    // //viz.showCloud( pclAligner.getPcl(fix_cloud), fix_cloud);
-    // //viz.showCloud( pclAligner.getPcl(mov_cloud), mov_cloud);
-    // viz.spingUntilDeath();
+    PointCloudViz viz;
+    viz.setViewerBackground(255,255,255);
+    viz.showCloud( pclAligner.getFilteredPcl(fix_cloud), fix_cloud);
+    viz.showCloud( pclAligner.getFilteredPcl(mov_cloud), mov_cloud);
+    //viz.showCloud( pclAligner.getPcl(fix_cloud), fix_cloud);
+    //viz.showCloud( pclAligner.getPcl(mov_cloud), mov_cloud);
+    viz.spingUntilDeath();
 
     return 0;
 }

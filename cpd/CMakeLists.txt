@@ -113,7 +113,9 @@ install(EXPORT cpd-targets NAMESPACE Cpd:: DESTINATION lib/cmake/cpd)
 
 
 # Components
-find_package(jsoncpp QUIET)
+if(NOT TARGET JsonCpp::JsonCpp)
+  find_package(JsonCpp REQUIRED)
+endif()
 option(WITH_JSONCPP "Build with jsoncpp" ${jsoncpp_FOUND})
 if(WITH_JSONCPP)
     find_package(jsoncpp REQUIRED)
