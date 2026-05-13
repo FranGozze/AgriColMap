@@ -42,7 +42,7 @@ corresponding to one match per line.
 
 #include "PythonClient.hpp"
 
-enum FeatureMode { DAISY_FEATURE = 0, SUPERPOINT_FEATURE = 1}; 
+
 
 class CPM
 {

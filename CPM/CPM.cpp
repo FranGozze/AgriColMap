@@ -308,7 +308,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
     float cloud_ratio = 0.f;
     for (int i = 0; i < nLevels; i++){
         cloud_ratio = i * (1/_pydRatio);
-        if (featureMode == DAISY_FEATURE){
+        if (featureMode == 0){
             imDaisy(_pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]);
             imDaisy(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
         }
