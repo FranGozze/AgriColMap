@@ -15,6 +15,14 @@ import json
 
 import struct
 
+# from enum import Enum
+
+# class methods(Enum):
+#     DAISY = 0
+#     RESNET_MULTI = 1
+#     RESNET = 2
+#     SIFT = 3
+
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -30,11 +38,14 @@ daisy = cv2.xfeatures2d.DAISY_create(
 
 sift = cv2.SIFT_create()
 
-_MODEL_INSTANCE = None
 
+_MODEL_INSTANCE = None
+last_model_name = ""
 def get_matching_model(model_name=''):
     global _MODEL_INSTANCE
-    if _MODEL_INSTANCE is None:
+    
+
+    if model_name != model_name or (_MODEL_INSTANCE is None):
         if model_name == 'roma':
             from roma_match import roma_outdoor
             _MODEL_INSTANCE =  roma_outdoor(device=device)
@@ -69,7 +80,7 @@ def get_matching_model(model_name=''):
             ).eval().to(device)
         else:
             raise ValueError(f"Unknown model name: {model_name}")
-        
+    last_model_name = model_name
     return _MODEL_INSTANCE
 
 def extract_hog(img):

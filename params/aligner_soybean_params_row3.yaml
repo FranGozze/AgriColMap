@@ -23,4 +23,4 @@ aligner_params:
   visual_features_weight:	            1
   use_geometric_features:             false
   geometric_features_weight:          0.5 
-
+  matching_mode:                      0

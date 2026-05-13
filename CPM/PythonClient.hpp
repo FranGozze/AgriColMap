@@ -31,6 +31,7 @@ public:
         const FImage& imgExg,
         const FImage& imgElev,
         float cloud_ratio,
+        const int method,
         UCImage& outFtImg_Exg,
         UCImage& outFtImg_Elev
     );

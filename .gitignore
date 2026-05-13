@@ -8,6 +8,7 @@ opencv/
 opencv_contrib/
 data/
 params/output/results/*
+params/output/2018*
 params/output/RosarioV2Ground/*
 python/venv/
 python/SuperGluePretrainedNetwork/

@@ -39,6 +39,7 @@ void PythonClient::extract(
     const FImage& imgExg,
     const FImage& imgElev,
     float cloud_ratio,
+    const int method,
     UCImage& outFtImg_Exg,
     UCImage& outFtImg_Elev
 ) {
@@ -53,6 +54,7 @@ void PythonClient::extract(
     request["img_exg"] = encodeFImage(imgExg);
     request["img_elev"] = encodeFImage(imgElev);
     request["cloud_ratio"] = cloud_ratio;
+    request["id_method"] = method;
 
     std::string req_str = request.dump();
     socket.send(zmq::buffer(req_str), zmq::send_flags::none);

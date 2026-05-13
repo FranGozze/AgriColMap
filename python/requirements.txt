@@ -1,0 +1,8 @@
+matplotlib
+torch
+opencv-python
+numpy
+scikit-image
+zmq
+torchvision
+opencv-contrib-python

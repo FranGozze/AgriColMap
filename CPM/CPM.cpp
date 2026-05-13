@@ -313,8 +313,8 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
             imDaisy(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
         }
         else{
-            pythonClient.extract(_pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]);
-            pythonClient.extract(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
+            pythonClient.extract(_pyd1[i], _pyd1_cloud[i], cloud_ratio, featureMode,_im1_exg[i], _im1_elev[i]);
+            pythonClient.extract(_pyd2[i], _pyd2_cloud[i], cloud_ratio, featureMode,_im2_exg[i], _im2_elev[i]);
         }
         // 		ImageFeature::imSIFT(_pyd1[i], _im1f[i], 2, 1, true, 8);
         // 		ImageFeature::imSIFT(_pyd2[i], _im2f[i], 2, 1, true, 8);
