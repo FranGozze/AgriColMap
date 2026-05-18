@@ -53,6 +53,7 @@ class PointCloudHandler{
         //boost::shared_ptr<GroundTruth> inline getGroundTruth(const std::string& cloud_name){ return GTMap[cloud_name]; }
         bool inline getVerbosityLevel(){return _verbosity;}
         const Vector2 inline getInitMovScale(){return _init_mov_scale;}
+        void inline setMatchingMode(int mode){ matchingMode = mode; }
 
     protected:
 

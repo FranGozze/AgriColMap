@@ -25,6 +25,11 @@ int main(int argc, char **argv) {
     string YawNoiseMagStr = argv[4];
     float YawNoiseMag = stof(YawNoiseMagStr)/10;
     string ExpIDStr = argv[5];
+    if(argc == 7){
+        string matchingModeStr = argv[6];
+        int matchingMode = stoi(matchingModeStr);
+        pclAligner.setMatchingMode(matchingMode);
+    }
 
     // Adding Noise to Initial Guess
     pclAligner.addNoise( mov_cloud, scaleMag, TranslNoiseMag, YawNoiseMag );
