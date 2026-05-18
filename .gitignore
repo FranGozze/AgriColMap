@@ -16,3 +16,4 @@ python/RoMa
 python/__pycache__/
 python/received_*
 cppzmq/
+params/output/__pycache__/
