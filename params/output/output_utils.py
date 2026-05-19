@@ -30,6 +30,20 @@ def scale_matrix(A, s):
     B[:, 2] = A[:, 2] / s[2]
     return B
 
+def print_metrics(group):
+    print("\nRegistration Error Metrics (averaged over successful cases):")
+    print("Scale_mag row samples  Method   Transl Err  Angle Err  Scale Err")
+    
+    for key in group:
+        for method in group[key]:            
+            avg_transl_err = np.mean(group[key][method]['transl_err'])
+            avg_angle_err = np.mean(group[key][method]['angle_err'])
+            avg_scale_err = np.mean(group[key][method]['scale_err'])
+            row = 3
+            samples = len(group[key][method]['transl_err'])
+            print(f"{key},  {row},      {samples},   {method},   {avg_transl_err:.4f},     {avg_angle_err:.4f},    {(avg_scale_err*100):.4f} %")
+    print("\n")
+
 
 def compute_angle(A):
     A = np.asarray(A, dtype=float)

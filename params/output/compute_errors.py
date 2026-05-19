@@ -1,6 +1,6 @@
 from pathlib import Path
 import numpy as np
-from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle
+from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics
 
 import argparse
 
@@ -32,11 +32,13 @@ def extract_from_gt_file(data):
     return s, s_init, A, t
 
 
+    
+
 def main():
 
     parser = argparse.ArgumentParser(description='Computes registration success rate and error metrics from affine result files.')    
-    parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row3_AffineGroundTruth.txt", help='Ground truth file')
-    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row3", help='Folder containing result files to process')
+    parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt", help='Ground truth file')
+    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row5", help='Folder containing result files to process')
     parser.add_argument('-o', '--output', help='name of output file plot')    
 
     args = parser.parse_args()
@@ -60,12 +62,19 @@ def main():
     counter = 0
     succ_number = 0
 
+    grouped_by = {}
+
     for file_name in file_list:        
 
         current_path = results_folder / file_name
         if not current_path.exists():
             print(f"Skipping missing file: {file_name}")
             continue
+        partitions = str(current_path).split("_")
+        idx = partitions[2]
+        scale_noise_magnitude = partitions[3]
+        transl_noise_magnitude = partitions[4]
+        yaw_noise_magnitude = partitions[5]
 
         curr_file = np.loadtxt(current_path)
         s, Aff, t, tn, yn, sn = extract_from_file(curr_file)
@@ -89,13 +98,27 @@ def main():
         s_scl = np.array([s[0] * sn[0], s[1] * sn[1]], dtype=float)
 
         angle_err = max(0.005, compute_angle(diff_Aff))
-        scale_err = max(0.005, np.linalg.norm(s_scl - s_gt5[0:2]))
+        scale_err = max(0.005, np.linalg.norm(s_scl - s_gt5[:2]))
         transl_err = max(0.005, np.linalg.norm(t - t_gt5))
 
-        if abs(angle_err) <= 0.3 and abs(scale_err) <= 2.5 and abs(transl_err) <= 0.1:
+        if abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5 and abs(transl_err) <= 0.1:
             succ_number += 1
-            print(f"Successful registration case: {file_name}")
-            print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {scale_err:.4f}, ")
+            # print(f"Successful registration case: {file_name}")
+            # print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {(scale_err*100):.4f} % ")
+            if scale_noise_magnitude not in grouped_by:
+                grouped_by[scale_noise_magnitude] = {}
+            method = partitions[6].split(".")[0]
+            if method not in grouped_by[scale_noise_magnitude]:
+                grouped_by[scale_noise_magnitude][method] = {
+                    "transl_err": [],
+                    "angle_err": [],
+                    "scale_err": []
+                }
+            grouped_by[scale_noise_magnitude][method]["transl_err"].append(transl_err)
+            grouped_by[scale_noise_magnitude][method]["angle_err"].append(angle_err)
+            grouped_by[scale_noise_magnitude][method]["scale_err"].append(scale_err)
+            
+            
         else:
             print(f"Failed registration case: {file_name}")
             # print("Aff:", Aff)
@@ -106,6 +129,7 @@ def main():
 
     print(f"Processed: {counter}")
     if counter > 0:
+        print_metrics(grouped_by)
         print(f"Success ratio: {succ_number / counter:.6f}")
     else:
         print("No valid cases processed.")

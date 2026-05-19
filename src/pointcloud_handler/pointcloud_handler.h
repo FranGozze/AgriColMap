@@ -86,7 +86,7 @@ class PointCloudHandler{
         Vector2 _scaleNoise;
         Vector2d _TranslNoise;
         float _YawNoise;
-
+        float _scaleNoiseMagnitude, _translNoiseMagnitude, _yawNoiseMagnitude;
 
         // Strings and types that encode the paths and the extensions for the Point-Clouds to measure
 		std::string _fixed_pcl_path, _moving_pcl_path, _fixed_pcl, _moving_pcl;

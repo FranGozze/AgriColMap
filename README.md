@@ -51,7 +51,7 @@ Uncompress the downloaded file into: ${PATH_TO_AGRICOLMAP}/maps/. The "Soybean D
 
 ```bash
 cd bin
-./registration_node ../params/aligner_soybean_params_row3.yaml  10 100 50 2
+./registration_node ../params/aligner_soybean_params_row3.yaml  10 100 50 2 0
 ```
 
 The 5 parameters are, respectively:
@@ -61,6 +61,7 @@ The 5 parameters are, respectively:
   * the translational error magnitude
   * the heading error magnitude
   * the ID number for storing the resulting transform
+  * the feature's extracion ID number 
 
 In this case, we are registering the third row of the soybean dataset with an initial scale error magnitude of 10%, an traslational error magnitude of 2.5 metres, an heading error magnitude of 5 degrees, and an ID of 2.
 

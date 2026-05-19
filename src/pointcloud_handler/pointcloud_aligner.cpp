@@ -5,7 +5,7 @@ using namespace std;
 string getFeatureString(int feature){
 	switch(feature){
 		case 0: return "DAISY";
-		case 1: return "Resnet_Multiscale";
+		case 1: return "Resnet-Multiscale";
 		case 2: return "Resnet";
 		case 3: return "SIFT";
 		default: return "UNKWON";
@@ -70,7 +70,9 @@ void PointCloudAligner::downsaplePointCloud(const string &cloud_key, const float
 }
 
 void PointCloudAligner::addNoise(const std::string& cloud_key, const float& scaleMag, const float& TranslMag, const float& YawMag){
-
+    _scaleNoiseMagnitude = scaleMag;
+    _translNoiseMagnitude = TranslMag;
+    _yawNoiseMagnitude = YawMag;
     srand (time(NULL));
     Vector2d vd(1.f, 0.f);
     Vector2 v(1.f,0.f);
@@ -190,23 +192,23 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
 
 void PointCloudAligner::showDOFCorrespondeces(const int& len, const std::string& cloud1_name, const std::string& cloud2_name, const cv::Size& size){
 
-    cv::Size draw_img_size( size.width*2, size.height );
-    cv::Mat drawImg( draw_img_size, CV_8UC3, cv::Scalar(0,0,0) );
-    ERMap[cloud1_name]->getRgbImg().copyTo( drawImg( cv::Rect(0, 0, size.width, size.height) )  );
-    ERMap[cloud2_name]->getRgbImg().copyTo( drawImg( cv::Rect(size.width, 0, size.width, size.height) )  );
+    // cv::Size draw_img_size( size.width*2, size.height );
+    // cv::Mat drawImg( draw_img_size, CV_8UC3, cv::Scalar(0,0,0) );
+    // ERMap[cloud1_name]->getRgbImg().copyTo( drawImg( cv::Rect(0, 0, size.width, size.height) )  );
+    // ERMap[cloud2_name]->getRgbImg().copyTo( drawImg( cv::Rect(size.width, 0, size.width, size.height) )  );
 
-    for( unsigned int i = 0; i < len; ++i )
-            cv::line( drawImg,
-                      cv::Point(filteredMatches[4*i + 0], filteredMatches[4*i + 1]),
-                      cv::Point(filteredMatches[4*i + 2]+size.width, filteredMatches[4*i + 3]),
-                      cv::Scalar(0, 255, 0));
+    // for( unsigned int i = 0; i < len; ++i )
+    //         cv::line( drawImg,
+    //                   cv::Point(filteredMatches[4*i + 0], filteredMatches[4*i + 1]),
+    //                   cv::Point(filteredMatches[4*i + 2]+size.width, filteredMatches[4*i + 3]),
+    //                   cv::Scalar(0, 255, 0));
 
-    cv::Mat drawImgRes;
-    cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
+    // cv::Mat drawImgRes;
+    // cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
 
-    cv::imshow("matches", drawImgRes);
-    cv::waitKey(0);
-    cv::destroyWindow("matches");
+    // cv::imshow("matches", drawImgRes);
+    // cv::waitKey(0);
+    // cv::destroyWindow("matches");
 
 }
 
@@ -227,8 +229,8 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     ofstream outputAffineTf;
     outputAffineTf.open (getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                 iter + "_" + to_string( _scaleNoise.norm() ) + "_" + to_string( _TranslNoise.norm() ) +
-                "_" + to_string( _YawNoise) + "_" + getFeatureString(matchingMode) + ".txt");
+                 iter + "_" + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + ".txt");
     outputAffineTf << _R(0,0) << " " << _R(0,1) << " " << _R(0,2) << " " << _t(0) << " "
                    << _R(1,0) << " " << _R(1,1) << " " << _R(1,2) << " " << _t(1) << " "
                    << _R(2,0) << " " << _R(2,1) << " " << _R(2,2) << " " << _t(2) << " "
@@ -238,8 +240,8 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     outputAffineTf.close();
     cerr << FBLU("Ground Truth Affine Transform Written in: ") << getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                 iter + "_" + to_string( _scaleNoise.norm() ) + "_" + to_string( _TranslNoise.norm() ) +
-                 "_" + to_string( _YawNoise) + "_" + getFeatureString(matchingMode) + ".txt" << "\n";
+                 iter + "_" + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + ".txt" << "\n";
 }
 
 

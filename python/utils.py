@@ -78,6 +78,11 @@ def get_matching_model(model_name=''):
                 backbone.layer1,
                 backbone.layer2   # <-- STOP HERE (key change)
             ).eval().to(device)
+        elif model_name == 'resnet_full':
+            backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+            _MODEL_INSTANCE = torch.nn.Sequential(
+                *list(backbone.children())[:-2]
+            ).eval().to(device)
         else:
             raise ValueError(f"Unknown model name: {model_name}")
     last_model_name = model_name
@@ -175,9 +180,9 @@ def decode_image(b64):
     np_arr = np.frombuffer(data, np.uint8)
     return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-def extract_resnet(img):
+def extract_resnet(img, model_name='resnet'):
     H, W, _ = img.shape
-    model = get_matching_model('resnet')
+    model = get_matching_model(model_name)
     # BGR → RGB (important!)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
