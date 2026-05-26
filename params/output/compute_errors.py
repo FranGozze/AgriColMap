@@ -32,25 +32,7 @@ def extract_from_gt_file(data):
     return s, s_init, A, t
 
 
-    
-
-def main():
-
-    parser = argparse.ArgumentParser(description='Computes registration success rate and error metrics from affine result files.')    
-    parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt", help='Ground truth file')
-    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row5", help='Folder containing result files to process')
-    parser.add_argument('-o', '--output', help='name of output file plot')    
-
-    args = parser.parse_args()
-
-    
-
-    root = Path(__file__).resolve().parent
-    gt_path = root / args.gt
-    results_folder = root / args.results
-    # row5_path = root / "20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt"
-    # list_path = root / "file_list.txt"
-
+def process_folder(gt_path, results_folder):
     row5_data = np.loadtxt(gt_path)
     # file_list = parse_text_list(results_folder)
     file_list = [f.name for f in results_folder.iterdir() if f.is_file()]
@@ -64,6 +46,8 @@ def main():
 
     grouped_by = {}
 
+
+
     for file_name in file_list:        
 
         current_path = results_folder / file_name
@@ -75,9 +59,11 @@ def main():
         scale_noise_magnitude = partitions[3]
         transl_noise_magnitude = partitions[4]
         yaw_noise_magnitude = partitions[5]
+        method = partitions[6].split(".")[0]
 
         curr_file = np.loadtxt(current_path)
         s, Aff, t, tn, yn, sn = extract_from_file(curr_file)
+
 
         s = scale_from_matrix(Aff)
         Aff = scale_matrix(Aff, s)
@@ -90,8 +76,7 @@ def main():
         Affn = Rnorm @ Aff
 
         # if np.linalg.norm(sn - 1.0) < 0.19 or np.linalg.norm(sn - 1.0) > 0.21 or yn > 6 or yn < 4:
-        #     print(f"Skipping file {file_name} due to invalid scale or yaw: sn={sn}, yn={yn}. sn should be close to 1.0 and yn should be around 5 degrees.")
-        #     print(f"linalg.norm(sn - 1.0) = {np.linalg.norm(sn - 1.0)}")
+        #     print(f"Skipping file {scale_noise_magnitude} {method} linalg.norm(sn - 1.0) = {np.linalg.norm(sn - 1.0)}, yn={yn}.")
         #     continue
 
         diff_Aff = np.linalg.solve(Affn, Aff_gt5)
@@ -101,29 +86,34 @@ def main():
         scale_err = max(0.005, np.linalg.norm(s_scl - s_gt5[:2]))
         transl_err = max(0.005, np.linalg.norm(t - t_gt5))
 
-        if abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5 and abs(transl_err) <= 0.1:
+        if abs(transl_err) <= 0.05 and abs(angle_err) <= 0.1 and abs(scale_err) <= 2.5:
             succ_number += 1
             # print(f"Successful registration case: {file_name}")
             # print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {(scale_err*100):.4f} % ")
             if scale_noise_magnitude not in grouped_by:
                 grouped_by[scale_noise_magnitude] = {}
-            method = partitions[6].split(".")[0]
-            if method not in grouped_by[scale_noise_magnitude]:
-                grouped_by[scale_noise_magnitude][method] = {
+            if transl_noise_magnitude not in grouped_by[scale_noise_magnitude]:
+                grouped_by[scale_noise_magnitude][transl_noise_magnitude] = {}
+            if yaw_noise_magnitude not in grouped_by[scale_noise_magnitude][transl_noise_magnitude]:
+                grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude] = {}
+            if method not in grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude]:
+                grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method] = {
                     "transl_err": [],
                     "angle_err": [],
                     "scale_err": []
                 }
-            grouped_by[scale_noise_magnitude][method]["transl_err"].append(transl_err)
-            grouped_by[scale_noise_magnitude][method]["angle_err"].append(angle_err)
-            grouped_by[scale_noise_magnitude][method]["scale_err"].append(scale_err)
+            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["transl_err"].append(abs(transl_err))
+            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["angle_err"].append(abs(angle_err))
+            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["scale_err"].append(abs(scale_err))
             
             
-        else:
-            print(f"Failed registration case: {file_name}")
-            # print("Aff:", Aff)
+        else:            
+            # print("Aff:", Aff)            
             # print("Aff_gt5:", Aff_gt5)
-            print(f" transl_err: {transl_err}, angle_err: {angle_err}, scale_err: {scale_err}")
+            fail_reasons = f" transl_err: {transl_err}" if abs(transl_err) > 0.05 else ""
+            fail_reasons += f" angle_err: {angle_err}" if abs(angle_err) > 0.1 else ""
+            fail_reasons += f" scale_err: {scale_err}" if abs(scale_err) > 2.5 else ""
+            print(f"Failed registration case: {file_name} ({fail_reasons})")
 
         counter += 1
 
@@ -133,6 +123,32 @@ def main():
         print(f"Success ratio: {succ_number / counter:.6f}")
     else:
         print("No valid cases processed.")
+
+def main():
+
+    parser = argparse.ArgumentParser(description='Computes registration success rate and error metrics from affine result files.')    
+    parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt", help='Ground truth file')
+    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row5", help='Folder containing result files to process')
+    parser.add_argument('-c', '--complete', action="store_true", help="show all the soybean rows")
+    parser.add_argument('-o', '--output', help='name of output file plot')    
+
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parent
+    if args.complete:
+        for x in [3,4,5]:
+            gt_file = f"20180524-mavic-ugv-soybean-eschikon-row{x}_AffineGroundTruth.txt"
+            results_folder = root / f"20180524-mavic-ugv-soybean-eschikon-row{x}"
+            print(f"\nProcessing row {x}...")
+            process_folder(gt_file, results_folder)
+    else:
+        
+        gt_path = root / args.gt
+        results_folder = root / args.results
+        process_folder(gt_path, results_folder)
+        # row5_path = root / "20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt"
+        # list_path = root / "file_list.txt"
+
+    
 
 
 if __name__ == "__main__":
