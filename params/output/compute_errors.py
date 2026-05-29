@@ -54,12 +54,13 @@ def process_folder(gt_path, results_folder):
         if not current_path.exists():
             print(f"Skipping missing file: {file_name}")
             continue
-        partitions = str(current_path).split("_")
-        idx = partitions[2]
-        scale_noise_magnitude = partitions[3]
-        transl_noise_magnitude = partitions[4]
-        yaw_noise_magnitude = partitions[5]
-        method = partitions[6].split(".")[0]
+        partitions = str(file_name).split("_")
+        print(f"Processing file: {file_name} with partitions: {partitions}")
+        scale_noise_magnitude = partitions[2]
+        transl_noise_magnitude = partitions[3]
+        yaw_noise_magnitude = partitions[4]
+        method = partitions[5]
+        idx = partitions[6].split(".")[0]
 
         curr_file = np.loadtxt(current_path)
         s, Aff, t, tn, yn, sn = extract_from_file(curr_file)
@@ -87,6 +88,7 @@ def process_folder(gt_path, results_folder):
         transl_err = max(0.005, np.linalg.norm(t - t_gt5))
 
         if abs(transl_err) <= 0.05 and abs(angle_err) <= 0.1 and abs(scale_err) <= 2.5:
+        # if True:
             succ_number += 1
             # print(f"Successful registration case: {file_name}")
             # print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {(scale_err*100):.4f} % ")
@@ -121,13 +123,16 @@ def process_folder(gt_path, results_folder):
     if counter > 0:
         print_metrics(grouped_by)
         print(f"Success ratio: {succ_number / counter:.6f}")
+        print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl]])}")
+        print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl]])}")
+        print(f"Max scale err: {max([max(grouped_by[scale][transl][yaw][method]['scale_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl]])}")
     else:
         print("No valid cases processed.")
 
 def main():
 
     parser = argparse.ArgumentParser(description='Computes registration success rate and error metrics from affine result files.')    
-    parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt", help='Ground truth file')
+    parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row3_AffineGroundTruth.txt", help='Ground truth file')
     parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row5", help='Folder containing result files to process')
     parser.add_argument('-c', '--complete', action="store_true", help="show all the soybean rows")
     parser.add_argument('-o', '--output', help='name of output file plot')    

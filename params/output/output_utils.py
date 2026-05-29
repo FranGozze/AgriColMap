@@ -32,7 +32,7 @@ def scale_matrix(A, s):
 
 def print_metrics(group):
     print("\nRegistration Error Metrics (averaged over successful cases):")
-    print("Scale_mag trans_mag row samples  Method   Transl Err  Angle Err  Scale Err")
+    print("Scale_mag trans_mag yaw_mag row samples  Method   Transl Err  Angle Err  Scale Err")
     
     for scale in sorted(group.keys()):
         for transl_noise in sorted(group[scale].keys()):
@@ -43,7 +43,7 @@ def print_metrics(group):
                     avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
                     row = 3
                     samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                print(f"{scale},  {transl_noise},  {row},      {samples},   {method},   {avg_transl_err:.4f},     {avg_angle_err:.4f},    {(avg_scale_err*100):.4f} %")
+                    print(f"{float(scale):.2f}%,      {(float(transl_noise)*2.5):.2f} m,  {float(yaw_noise):.2f}º,  {row},      {samples},   {method},   {float(avg_transl_err):.3f}m,     {float(avg_angle_err):.3f}º,    {(float(avg_scale_err)*100):.2f} %")
     print("\n")
 
 

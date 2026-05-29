@@ -229,8 +229,8 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     ofstream outputAffineTf;
     outputAffineTf.open (getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                 iter + "_" + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
-                "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + ".txt");
+                  + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt");
     outputAffineTf << _R(0,0) << " " << _R(0,1) << " " << _R(0,2) << " " << _t(0) << " "
                    << _R(1,0) << " " << _R(1,1) << " " << _R(1,2) << " " << _t(1) << " "
                    << _R(2,0) << " " << _R(2,1) << " " << _R(2,2) << " " << _t(2) << " "
@@ -240,8 +240,8 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     outputAffineTf.close();
     cerr << FBLU("Ground Truth Affine Transform Written in: ") << getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                 iter + "_" + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
-                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + ".txt" << "\n";
+                  + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt" << "\n";
 }
 
 

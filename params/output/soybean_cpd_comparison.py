@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 from output_utils import parse_text_list, scale_from_matrix, print_metrics
 import argparse
+import re
 
 
 def parse_affine_result(data):
@@ -40,7 +41,8 @@ def main():
 
     args = parser.parse_args()
 
-    
+    row = re.search(r'row(\d+)', args.results)
+    row = int(row.group(1)) if row else 0
 
     root = Path(__file__).resolve().parent
     results_folder = root / args.results
@@ -96,8 +98,11 @@ def main():
         grouped_by[scale_noise_magnitude][method]["scale_err"].append(result_metrics[2])
 
     result = np.vstack(result) if result else np.zeros((0, 7), dtype=float)
-    np.savetxt(output_folder / "soybean_row3_cpd_comparison_result.csv", result, delimiter=',', header='rot_err,trans_err,scl_err,xy_err_mag,yaw_err,xy_scl_err_mag,scale_mag_noise', comments='', fmt='%.6f')
-    np.save(output_folder / "soybean_row3_cpd_comparison_result.npy", result)
+    
+
+
+    np.savetxt(output_folder / f"soybean_row{row}_cpd_comparison_result.csv", result, delimiter=',', header='rot_err,trans_err,scl_err,xy_err_mag,yaw_err,xy_scl_err_mag,scale_mag_noise', comments='', fmt='%.6f')
+    np.save(output_folder / f"soybean_row{row}_cpd_comparison_result.npy", result)
     print(f"Computed {result.shape[0]} rows and saved results to CSV and NPY.")
     print_metrics(grouped_by)
 
