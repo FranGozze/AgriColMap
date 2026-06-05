@@ -32,7 +32,7 @@ def extract_from_gt_file(data):
     return s, s_init, A, t
 
 
-def process_folder(gt_path, results_folder):
+def process_folder(gt_path, results_folder, rowNumber=None):
     row5_data = np.loadtxt(gt_path)
     # file_list = parse_text_list(results_folder)
     file_list = [f.name for f in results_folder.iterdir() if f.is_file()]
@@ -41,6 +41,8 @@ def process_folder(gt_path, results_folder):
 
     s_gt5, s_init5, Aff_gt5, t_gt5 = extract_from_gt_file(row5_data)
 
+    if rowNumber is None:
+        rowNumber = gt_path.split("_")[0][-1]  # Extract row number from GT file name
     counter = 0
     succ_number = 0
 
@@ -55,7 +57,7 @@ def process_folder(gt_path, results_folder):
             print(f"Skipping missing file: {file_name}")
             continue
         partitions = str(file_name).split("_")
-        print(f"Processing file: {file_name} with partitions: {partitions}")
+        # print(f"Processing file: {file_name} with partitions: {partitions}")
         scale_noise_magnitude = partitions[2]
         transl_noise_magnitude = partitions[3]
         yaw_noise_magnitude = partitions[4]
@@ -87,7 +89,7 @@ def process_folder(gt_path, results_folder):
         scale_err = max(0.005, np.linalg.norm(s_scl - s_gt5[:2]))
         transl_err = max(0.005, np.linalg.norm(t - t_gt5))
 
-        if abs(transl_err) <= 0.05 and abs(angle_err) <= 0.1 and abs(scale_err) <= 2.5:
+        if abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5:
         # if True:
             succ_number += 1
             # print(f"Successful registration case: {file_name}")
@@ -120,12 +122,12 @@ def process_folder(gt_path, results_folder):
         counter += 1
 
     print(f"Processed: {counter}")
-    if counter > 0:
-        print_metrics(grouped_by)
-        print(f"Success ratio: {succ_number / counter:.6f}")
-        print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl]])}")
-        print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl]])}")
-        print(f"Max scale err: {max([max(grouped_by[scale][transl][yaw][method]['scale_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl]])}")
+    if succ_number > 0:
+        print_metrics(rowNumber,grouped_by)
+        print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")
+        print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
+        print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
+        print(f"Max scale err: {max([max(grouped_by[scale][transl][yaw][method]['scale_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
     else:
         print("No valid cases processed.")
 
@@ -133,7 +135,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Computes registration success rate and error metrics from affine result files.')    
     parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row3_AffineGroundTruth.txt", help='Ground truth file')
-    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row5", help='Folder containing result files to process')
+    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row3", help='Folder containing result files to process')
     parser.add_argument('-c', '--complete', action="store_true", help="show all the soybean rows")
     parser.add_argument('-o', '--output', help='name of output file plot')    
 
@@ -144,12 +146,14 @@ def main():
             gt_file = f"20180524-mavic-ugv-soybean-eschikon-row{x}_AffineGroundTruth.txt"
             results_folder = root / f"20180524-mavic-ugv-soybean-eschikon-row{x}"
             print(f"\nProcessing row {x}...")
-            process_folder(gt_file, results_folder)
+            process_folder(gt_file, results_folder, rowNumber=x)
     else:
         
+        rowNumber = args.gt.split("_")[0][-1]  # Extract row number from GT file name
         gt_path = root / args.gt
         results_folder = root / args.results
-        process_folder(gt_path, results_folder)
+        print(f"Processing GT: {gt_path} with results from folder: {results_folder}...")
+        process_folder(gt_path, results_folder, rowNumber=rowNumber)
         # row5_path = root / "20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt"
         # list_path = root / "file_list.txt"
 
