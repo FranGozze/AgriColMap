@@ -6,7 +6,7 @@ import json
 
 import struct
 
-import utils
+import utils_methods as utils
 
 # ---- Replace this with RoMa / SuperGlue ----
 def dummy_match(img1, img2):
@@ -34,7 +34,8 @@ def dummy_match(img1, img2):
 # - extract_dense_sift
 
 
-methods = [utils.extract_daisy, utils.extract_resnet_multiscale, utils.extract_resnet, utils.extract_dense_sift]
+methods = [utils.extract_daisy, utils.extract_resnet, utils.extract_dense_sift, utils.extract_dino_single_image,
+    utils.extract_gabor_hog, utils.extract_lss, utils.extract_gabor_lss, utils.extract_resnet_multiscale]
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
@@ -54,8 +55,10 @@ while True:
     img_elev = utils.decode_image(message["img_elev"])
     cloudRatio = message["cloud_ratio"]
     id_method = message["id_method"]
-    # cv2.imwrite(f"imgs/received_img_{img_counter}.jpg", img_exg)
-    # img_exg = cv2.imread("test_img_exg.jpg", cv2.IMREAD_COLOR)  # For testing without ZMQ
+    # cv2.imwrite(f"imgs/received_img_{img_counter}_exg.jpg", img_exg)
+    # cv2.imwrite(f"imgs/received_img_{img_counter}_elev.jpg", img_elev)
+    # img_exg = cv2.imread("imgs/received_img_0_exg.jpg", cv2.IMREAD_COLOR)  # For testing without ZMQ
+    # id_method = 3  # For testing without ZMQ
     print(f"method: {id_method}")
     feat_exg = methods[id_method](img_exg)
     # print("Extracted features: ", feat_exg)

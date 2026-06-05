@@ -5,9 +5,13 @@ using namespace std;
 string getFeatureString(int feature){
 	switch(feature){
 		case 0: return "DAISY";
-		case 1: return "Resnet-Multiscale";
-		case 2: return "Resnet";
-		case 3: return "SIFT";
+		case 1: return "Resnet";
+		case 2: return "SIFT";
+        case 3: return "Dino";
+        case 4: return "Gabor-HOG";
+        case 5: return "LSS";
+        case 6: return "Gabor-LSS";
+		case 7: return "Resnet-M";
 		default: return "UNKWON";
 	}
 }
@@ -112,7 +116,7 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
     
 
-    std::cout << "Matching Mode: " << matchingMode << "\n";
+    std::cout << "Matching Mode: " << getFeatureString(matchingMode) << "\n";
 
     cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);
     // if (matchingMode == CPM_MATCHING)
@@ -229,8 +233,8 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     ofstream outputAffineTf;
     outputAffineTf.open (getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                  + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
-                "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt");
+                 to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt");
     outputAffineTf << _R(0,0) << " " << _R(0,1) << " " << _R(0,2) << " " << _t(0) << " "
                    << _R(1,0) << " " << _R(1,1) << " " << _R(1,2) << " " << _t(1) << " "
                    << _R(2,0) << " " << _R(2,1) << " " << _R(2,2) << " " << _t(2) << " "
@@ -240,7 +244,7 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     outputAffineTf.close();
     cerr << FBLU("Ground Truth Affine Transform Written in: ") << getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                  + to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                 to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
                  "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt" << "\n";
 }
 
