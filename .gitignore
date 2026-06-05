@@ -17,3 +17,5 @@ python/__pycache__/
 python/received_*
 cppzmq/
 params/output/__pycache__/
+*20180524-mavic-ugv-soybean-eschikon*
+python/imgs/
