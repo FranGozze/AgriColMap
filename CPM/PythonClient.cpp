@@ -92,12 +92,16 @@ void PythonClient::extract(
     // const float* elev_ptr = static_cast<float*>(elev_msg.data());
     std::cout << "Received feature data: exg size=" << size_exg << ", elev size=" << size_elev << std::endl;
 
-    std::memcpy(outFtImg_Exg.pData, exg_msg.data(), H*W*104);
+    std::memcpy(outFtImg_Exg.pData, exg_msg.data(), H*W*C1);
     std::cout << "Copied EXG feature data" << std::endl;
+
+    // std::memcpy(outFtImg_Elev.pData, elev_msg.data(), H2*W2*33);
+    
     // for (int i = 0; i < H2 * W2 * C2; i++) {
     //     outFtImg_Elev.pData[i] =
     //         static_cast<unsigned char>(std::round(elev_ptr[i] * 255));
     // }
+
     std::cout << "Copied ELEV feature data" << std::endl;
 
 }
