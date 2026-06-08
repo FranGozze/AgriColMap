@@ -10,17 +10,17 @@ cd ../bin/
 # do
 	# for YNoise in $(seq 0):
 	# do
-		# for Scale in $(seq 50 10 50):
-		# do
+		for Scale in $(seq 40 10 50):
+		do
 	
-		# 	for ExpID in $(seq 0 1 5):
-		# 	do	
-		# 		echo ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} 4
-		# 		./registration_node ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} 4
-		# 		echo ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} 4
-		# 		./registration_node ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} 4
-		# 	done	
-		# done
+			for ExpID in $(seq 0 1 5):
+			do	
+				echo ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} 10
+				./registration_node ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} 10
+				echo ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} 10
+				./registration_node ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} 10
+			done	
+		done
 	# done
 # done
 
@@ -29,19 +29,19 @@ cd ../bin/
 # do	
 # 	for YNoise in $(seq 0):
 # 	do
-		for Scale in $(seq 0 10 50):
-		do
-			 for Mode in $(seq 5 1 6):
-			 do
-				for ExpID in $(seq 0 1 5):
-				do	
-					echo ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} ${Mode}
-					./registration_node ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} ${Mode}
-					echo ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} ${Mode}
-					./registration_node ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} ${Mode}
-				done
-			 done
-		done
+		# for Scale in $(seq 0 10 50):
+		# do
+		# 	 for Mode in $(seq 10 1 11):
+		# 	 do
+		# 		for ExpID in $(seq 0 1 5):
+		# 		do	
+		# 			echo ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} ${Mode}
+		# 			./registration_node ${PARAMS_FILE_PATH1} ${Scale} 100 0 ${ExpID} ${Mode}
+		# 			echo ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} ${Mode}
+		# 			./registration_node ${PARAMS_FILE_PATH3} ${Scale} 100 0 ${ExpID} ${Mode}
+		# 		done
+		# 	 done
+		# done
 # 	done
 # done
 

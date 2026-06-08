@@ -285,8 +285,8 @@ def extract_dino(img):
     # resize back to original image size
     if scale < 1:
         feat = cv2.resize(feat, (W0, H0))
-
-    return feat[:, :, :104]
+    print("DINO raw feature shape:", feat.shape)
+    return feat
 
 
 def extract_dino_single_image(img):
@@ -355,7 +355,8 @@ def extract_dino_single_image(img):
     # 7. CRITICAL: Channel reduction to 104 via strided slicing
     # Instead of taking the first 104 channels [:104], we skip by 3s (::3) 
     # to sample features evenly across the whole 384 spectrum.
-    feat_104 = feat[:, :, ::3][:, :, :104]
+    print("DINO raw feature shape:", feat[:, :, ::3].shape)
+    feat_104 = feat[:, :, ::3][:, :, :104]  # Now shape is (H, W, 104)
 
     # 7. CRITICAL MATING CONSTRAINTS FOR DAISY REPLACEMENT:
     # A) Convert to strictly non-negative values (Mimicking gradient magnitudes)
@@ -382,7 +383,8 @@ def extract_dino_single_image(img):
     # 8. Scale back to match original image input dimensions
     if scale < 1 or H0 != H or W0 != W:
         feat_104 = cv2.resize(feat_104, (W0, H0), interpolation=cv2.INTER_LINEAR)
-
+    
+    
     return feat_104
 
 
@@ -505,8 +507,26 @@ def extract_dense_hog(img,
 
     return feat.astype(np.float32)
 
+def extract_gabor_only(img):
+    return extract_gabor(img, num_orientations=13, sigmas=(2,4,8,12), lambdas=(4,8))
+
+def extract_hog(img):
+    feat = extract_dense_hog(img, num_bins=104)
+    return feat.astype(np.float32)
+
 def extract_gabor_hog(img):
     gabor_feat = extract_gabor(img)
+    hog_feat = extract_dense_hog(img, num_bins=32)
+
+    feat = np.concatenate([gabor_feat, hog_feat], axis=2)
+
+    # norm = np.linalg.norm(feat, axis=2, keepdims=True)
+    # feat /= (norm + 1e-8)
+
+    return feat.astype(np.float32)
+
+def extract_gabor_hog2(img):
+    gabor_feat = extract_gabor(img, num_orientations=13, sigmas=(2,4,8,12), lambdas=(4,8))
     hog_feat = extract_dense_hog(img, num_bins=32)
 
     feat = np.concatenate([gabor_feat, hog_feat], axis=2)
@@ -553,7 +573,7 @@ def extract_lss(img,
 
     norm = np.linalg.norm(feat, axis=2, keepdims=True)
     feat /= (norm + 1e-8)
-    feat = feat[:, :, :104]
+    feat = feat
 
     return feat.astype(np.float32)
 
@@ -566,6 +586,18 @@ def extract_gabor_lss(img):
     # norm = np.linalg.norm(feat, axis=2, keepdims=True)
     # feat /= (norm + 1e-8)
     feat = feat[:, :, :104]
+    return feat.astype(np.float32)
+
+def extract_gabor_hog2_lss(img):
+    gabor_feat = extract_gabor(img, num_orientations=13, sigmas=(2,4,8,12), lambdas=(4,8))
+    hog_feat = extract_dense_hog(img, num_bins=32)
+    lss_feat = extract_lss(img, search_radius=3)
+
+    feat = np.concatenate([gabor_feat, hog_feat, lss_feat], axis=2)
+
+    # norm = np.linalg.norm(feat, axis=2, keepdims=True)
+    # feat /= (norm + 1e-8)
+
     return feat.astype(np.float32)
 
 def extract_lbp(img):
