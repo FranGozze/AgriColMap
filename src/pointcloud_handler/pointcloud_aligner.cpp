@@ -230,9 +230,15 @@ void PointCloudAligner::WriteDenseOpticalFlow(const int& w, const int& h, const 
     OpticFlowIO::SaveFlowAsImage(img_path.c_str(), u.pData, v.pData, w, h);
 }
 
+void createFolder(const std::string& folder_path){
+    if (!std::filesystem::exists(folder_path)) {
+        std::filesystem::create_directories(folder_path);
+    }
+}
 
 void PointCloudAligner::writeAffineTransform(const string& iter, const string& cloud){
 
+    createFolder(getPackagePath() + "/params/output/" + getMovingCloudPath() );   
     Vector2 scale = getInitMovScale();
     ofstream outputAffineTf;
     outputAffineTf.open (getPackagePath() + "/params/output/" +
