@@ -591,7 +591,7 @@ def extract_gabor_lss(img):
 def extract_gabor_hog2_lss(img):
     gabor_feat = extract_gabor(img, num_orientations=13, sigmas=(2,4,8,12), lambdas=(4,8))
     hog_feat = extract_dense_hog(img, num_bins=32)
-    lss_feat = extract_lss(img, search_radius=3)
+    lss_feat = extract_lss(img)
 
     feat = np.concatenate([gabor_feat, hog_feat, lss_feat], axis=2)
 
