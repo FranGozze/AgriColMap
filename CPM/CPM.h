@@ -74,7 +74,7 @@ private:
 
     // Creating Pcl from cv::Mat
     void CreateXYZCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const cv::Mat& orgCloud, cv::Mat& indexes);
-    void NormalsAndFPFHEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr& normals, pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfh, const float& ratio);
+    void NormalsAndFPFHEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr& normals, pcl::PointCloud<pcl::FPFHSignature33>::Ptr &fpfh, const float& ratio);
 
 	// minimum circle
 	struct Point{

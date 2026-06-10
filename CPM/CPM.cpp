@@ -454,7 +454,7 @@ void CPM::CreateXYZCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const cv::Ma
 }
 
 void CPM::NormalsAndFPFHEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr &normals,
-                                   pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfh, const float& ratio){
+                                   pcl::PointCloud<pcl::FPFHSignature33>::Ptr &fpfh, const float& ratio){
 
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> NormalEstimator;
     NormalEstimator.setInputCloud (cloud);
