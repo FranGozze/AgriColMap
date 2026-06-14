@@ -16,6 +16,9 @@ string getFeatureString(int feature){
         case 9: return "Gabor-HOG2";
         case 10: return "Gabor-HOG2-LSS";
 		case 11: return "Resnet-M";
+        case 12: return "DAISY-Gabor";
+        case 13: return "DAISY-HOG";
+        case 14: return "DAISY-GABOR-HOG";
 		default: return "UNKWON";
 	}
 }

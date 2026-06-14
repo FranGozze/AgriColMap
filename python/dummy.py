@@ -35,7 +35,9 @@ def dummy_match(img1, img2):
 
 
 methods = [utils.extract_daisy, utils.extract_resnet, utils.extract_dense_sift, utils.extract_dino_single_image,
-    utils.extract_gabor_hog, utils.extract_lss, utils.extract_gabor_lss, utils.extract_hog, utils.extract_gabor_only, utils.extract_gabor_hog2, utils.extract_gabor_hog2_lss, utils.extract_resnet_multiscale]
+    utils.extract_gabor_hog, utils.extract_lss, utils.extract_gabor_lss, utils.extract_hog, utils.extract_gabor_only, utils.extract_gabor_hog2, utils.extract_gabor_hog2_lss, utils.extract_resnet_multiscale,
+    utils.extract_daisy_gabor, utils.extract_daisy_hog, utils.extract_daisy_gabor_hog
+    ]
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)

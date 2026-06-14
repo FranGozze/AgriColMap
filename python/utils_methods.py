@@ -600,6 +600,40 @@ def extract_gabor_hog2_lss(img):
 
     return feat.astype(np.float32)
 
+def extract_daisy_gabor(img):
+    daisy_feat = extract_daisy(img)
+    gabor_feat = extract_gabor(img)
+
+    feat = np.concatenate([daisy_feat, gabor_feat], axis=2)
+
+    # norm = np.linalg.norm(feat, axis=2, keepdims=True)
+    # feat /= (norm + 1e-8)
+
+    return feat.astype(np.float32)
+
+def extract_daisy_hog(img):
+    daisy_feat = extract_daisy(img)
+    hog_feat = extract_dense_hog(img, num_bins=32)
+
+    feat = np.concatenate([daisy_feat, hog_feat], axis=2)
+
+    # norm = np.linalg.norm(feat, axis=2, keepdims=True)
+    # feat /= (norm + 1e-8)
+
+    return feat.astype(np.float32)
+
+def extract_daisy_gabor_hog(img):
+    daisy_feat = extract_daisy(img)
+    gabor_feat = extract_gabor(img)
+    hog_feat = extract_dense_hog(img, num_bins=32)
+
+    feat = np.concatenate([daisy_feat, gabor_feat, hog_feat], axis=2)
+
+    # norm = np.linalg.norm(feat, axis=2, keepdims=True)
+    # feat /= (norm + 1e-8)
+
+    return feat.astype(np.float32)
+
 def extract_lbp(img):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
