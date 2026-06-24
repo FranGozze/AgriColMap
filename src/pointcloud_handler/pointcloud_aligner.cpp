@@ -121,8 +121,12 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img2.imcopy( ERMap[cloud2_name]->getExgImg() );
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
-    
 
+    std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" +  to_string(ERMap[cloud1_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud1_name]->getYCoord() + 13.0f) + "_exg.png", ERMap[cloud1_name]->getExgImg());
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_" + to_string(ERMap[cloud2_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud2_name]->getYCoord() + 13.0f) + "_exg.png", ERMap[cloud2_name]->getExgImg());
+    // img1.saveImage(getPackagePath() + "/imgs/" + cloud1_name + "_exg.png");
+    // img2.saveImage(getPackagePath() + "/imgs/" + cloud2_name + "_exg.png");
     std::cout << "Matching Mode: " << getFeatureString(matchingMode) << "\n";
 
     cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);
@@ -203,23 +207,23 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
 
 void PointCloudAligner::showDOFCorrespondeces(const int& len, const std::string& cloud1_name, const std::string& cloud2_name, const cv::Size& size){
 
-    // cv::Size draw_img_size( size.width*2, size.height );
-    // cv::Mat drawImg( draw_img_size, CV_8UC3, cv::Scalar(0,0,0) );
-    // ERMap[cloud1_name]->getRgbImg().copyTo( drawImg( cv::Rect(0, 0, size.width, size.height) )  );
-    // ERMap[cloud2_name]->getRgbImg().copyTo( drawImg( cv::Rect(size.width, 0, size.width, size.height) )  );
+    cv::Size draw_img_size( size.width*2, size.height );
+    cv::Mat drawImg( draw_img_size, CV_8UC3, cv::Scalar(0,0,0) );
+    ERMap[cloud1_name]->getRgbImg().copyTo( drawImg( cv::Rect(0, 0, size.width, size.height) )  );
+    ERMap[cloud2_name]->getRgbImg().copyTo( drawImg( cv::Rect(size.width, 0, size.width, size.height) )  );
 
-    // for( unsigned int i = 0; i < len; ++i )
-    //         cv::line( drawImg,
-    //                   cv::Point(filteredMatches[4*i + 0], filteredMatches[4*i + 1]),
-    //                   cv::Point(filteredMatches[4*i + 2]+size.width, filteredMatches[4*i + 3]),
-    //                   cv::Scalar(0, 255, 0));
+    for( unsigned int i = 0; i < len; ++i )
+            cv::line( drawImg,
+                      cv::Point(filteredMatches[4*i + 0], filteredMatches[4*i + 1]),
+                      cv::Point(filteredMatches[4*i + 2]+size.width, filteredMatches[4*i + 3]),
+                      cv::Scalar(0, 255, 0));
 
-    // cv::Mat drawImgRes;
-    // cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
+    cv::Mat drawImgRes;
+    cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
 
-    // cv::imshow("matches", drawImgRes);
-    // cv::waitKey(0);
-    // cv::destroyWindow("matches");
+    cv::imshow("matches", drawImgRes);
+    cv::waitKey(0);
+    cv::destroyWindow("matches");
 
 }
 
