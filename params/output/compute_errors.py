@@ -1,10 +1,11 @@
 from pathlib import Path
 import numpy as np
-from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics
+from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics, print_metrics_latex
 
 import argparse
 
 debug = False
+latex = False
 def printDebugInfo(message):
     if debug:
         print(message)
@@ -36,7 +37,7 @@ def extract_from_gt_file(data):
     return s, s_init, A, t
 
 
-def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=None, scale_noise_filter=None, yaw_noise_filter=None):
+def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=None, scale_noise_filter=None, yaw_noise_filter=None, method_filter=None):
     row5_data = np.loadtxt(gt_path)
     # file_list = parse_text_list(results_folder)
     file_list = [f.name for f in results_folder.iterdir() if f.is_file()]
@@ -78,6 +79,10 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
 
         if yaw_noise_filter is not None and float(yaw_noise_magnitude) != float(yaw_noise_filter):
             printDebugInfo(f"Skipping file {file_name} due to yaw noise filter: {yaw_noise_filter}")
+            continue
+        
+        if method_filter is not None and method != method_filter:
+            printDebugInfo(f"Skipping file {file_name} due to method filter: {method_filter}")
             continue
 
         curr_file = np.loadtxt(current_path)
@@ -139,7 +144,10 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
 
     print(f"Processed: {counter}")
     if succ_number > 0:
-        print_metrics(rowNumber,grouped_by)
+        if latex:
+            print_metrics_latex(rowNumber, grouped_by)
+        else:
+            print_metrics(rowNumber,grouped_by)
         print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")
         print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
         print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
@@ -159,9 +167,13 @@ def main():
     parser.add_argument('-t', '--filter_transl_noise',  default=None, help='filter out cases without translational noise selected')
     parser.add_argument('-s', '--filter_scale_noise',  default=None, help='filter out cases without scale noise selected')
     parser.add_argument('-y', '--filter_yaw_noise',  default=None, help='filter out cases without yaw noise selected')
+    parser.add_argument('-m', '--filter_method',  default=None, help='filter out cases without specific method selected')
     parser.add_argument('-d', '--debug', action="store_true", help='enable debug output')
+    parser.add_argument('-l','--latex', action="store_true", help='output results in LaTeX table format')
 
     args = parser.parse_args()
+    global latex
+    latex = args.latex
     global debug 
     debug = args.debug
     root = Path(__file__).resolve().parent
@@ -170,14 +182,14 @@ def main():
             gt_file = f"20180524-mavic-ugv-soybean-eschikon-row{x}_AffineGroundTruth.txt"
             results_folder = root / f"20180524-mavic-ugv-soybean-eschikon-row{x}"
             print(f"\nProcessing row {x}...")
-            process_folder(gt_file, results_folder, rowNumber=x, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise)
+            process_folder(gt_file, results_folder, rowNumber=x, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)
     else:
         
         rowNumber = args.gt.split("_")[0][-1]  # Extract row number from GT file name
         gt_path = root / args.gt
         results_folder = root / args.results
         print(f"Processing GT: {gt_path} with results from folder: {results_folder}...")
-        process_folder(gt_path, results_folder, rowNumber=rowNumber, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise)
+        process_folder(gt_path, results_folder, rowNumber=rowNumber, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)
         # row5_path = root / "20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt"
         # list_path = root / "file_list.txt"
 
