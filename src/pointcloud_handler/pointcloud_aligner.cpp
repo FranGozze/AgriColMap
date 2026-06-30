@@ -62,13 +62,13 @@ void PointCloudAligner::computeExGFilteredPointCloud(const string& cloud_key, co
 
 void PointCloudAligner::computeEnvironmentalModels(const string& mov_cloud_key, const string& fix_cloud_key){
 
-
+    std:cout << "s value: " << _s << "\n";
     ERMap.emplace( mov_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(mov_cloud_key) ) );
-    ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], 0.02 );
+    ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], _s );
     ERMap[mov_cloud_key]->computeMMGridMap();
 
     ERMap.emplace( fix_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(fix_cloud_key) ) );
-    ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], 0.02, _initTfMap[mov_cloud_key]->translation().head(2) );
+    ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], _s, _initTfMap[mov_cloud_key]->translation().head(2) );
     ERMap[fix_cloud_key]->computeMMGridMap();
 
     return;
@@ -122,9 +122,28 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
 
+    
     std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
     cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" +  to_string(ERMap[cloud1_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud1_name]->getYCoord() + 13.0f) + "_exg.png", ERMap[cloud1_name]->getExgImg());
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_" + to_string(ERMap[cloud2_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud2_name]->getYCoord() + 13.0f) + "_exg.png", ERMap[cloud2_name]->getExgImg());
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_" + to_string(ERMap[cloud2_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud2_name]->getYCoord() + 13.0f) + "_exg.png",
+             ERMap[cloud2_name]->getExgImg());
+    cv::Mat exg1 = ERMap[cloud1_name]->getExgImg();
+    cv::Point2f center1( exg1.cols/2.0, exg1.rows/2.0 );
+    cv::circle(exg1, center1, 10, cv::Scalar(255, 255, 255), -1);
+    cv::Mat exg2 = ERMap[cloud2_name]->getExgImg();
+    cv::Point2f center( exg2.cols/2.0, exg2.rows/2.0 );
+    cv::circle(exg2, center, 10, cv::Scalar(255, 255, 255), -1);
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_centerpoint_exg.png",exg1);
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_exg.png",exg2);
+
+    cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg();
+    cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
+    cv::circle(rgb1, center2, 10, cv::Scalar(255, 255, 255), -1);
+    cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg();
+    cv::Point2f center3( rgb2.cols/2.0, rgb2.rows/2.0 );
+    cv::circle(rgb2, center3, 10, cv::Scalar(255, 255, 255), -1);
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_centerpoint_rgb.png",rgb1);
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_rgb.png",rgb2);
     // img1.saveImage(getPackagePath() + "/imgs/" + cloud1_name + "_exg.png");
     // img2.saveImage(getPackagePath() + "/imgs/" + cloud2_name + "_exg.png");
     std::cout << "Matching Mode: " << getFeatureString(matchingMode) << "\n";

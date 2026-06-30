@@ -122,6 +122,10 @@ void PointCloudHandler::initFromYaml(const std::string& yaml_file){
     _geom_feat_weight = configuration["aligner_params"]["geometric_features_weight"].as<float>();
     if(configuration["aligner_params"]["matching_mode"])
         matchingMode = configuration["aligner_params"]["matching_mode"].as<int>();
+    if(configuration["aligner_params"]["cloud_visualization_enabled"])
+        _cloudVisualizationEnabled = configuration["aligner_params"]["cloud_visualization_enabled"].as<bool>();
+    if (configuration["aligner_params"]["s"])
+        _s = configuration["aligner_params"]["s"].as<float>();
 
 }
 

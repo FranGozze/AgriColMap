@@ -54,6 +54,7 @@ class PointCloudHandler{
         bool inline getVerbosityLevel(){return _verbosity;}
         const Vector2 inline getInitMovScale(){return _init_mov_scale;}
         void inline setMatchingMode(int mode){ matchingMode = mode; }
+        bool inline cloudVisualizationEnabled(){ return _cloudVisualizationEnabled; }
 
     protected:
 
@@ -76,6 +77,8 @@ class PointCloudHandler{
         bool _useVisualFeatures = true;
         bool _useGeometricFeatures = true;
         float _vis_feat_weight, _geom_feat_weight;
+        bool _cloudVisualizationEnabled = false;
+        float _s = 0.02;
 
         // Algorithm Variables
         PCLXYZRGB_unMap pclMap, pclMapFiltered, pclMapFilteredDownSampled;
