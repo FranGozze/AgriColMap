@@ -4,17 +4,17 @@ input_clouds:
   # Path, Name, and Type of the Clouds to Align
   cloud_fixed_path:                   RosarioV2Dron 
   cloud_fixed_name:                   dron_points_xyz
-  cloud_moving_path:                  RosarioV2Ground
-  cloud_moving_name:                  processed_xyz_rotated
-  relative_scale:	  	      [1, 1] 
+  cloud_moving_path:                  RosarioV2Ground-row3
+  cloud_moving_name:                  selection3_2
+  relative_scale:	  	      [1.01702, 1.01702] 
 
 ## Other Parameters
 aligner_params:  
   # Dense Opt. Flow, and Final Ref. Params
-  max_iter_number:                    10
+  max_iter_number:                    3
   verbosity:                          true
-  store_dense_optical_flow:           true
-  show_dpf_correspondences:           true
+  store_dense_optical_flow:           false
+  show_dpf_correspondences:           false
   dense_optical_flow_step:            3
   downsampling_rate:                  0.15
   search_radius:                      0.15
@@ -23,4 +23,6 @@ aligner_params:
   use_geometric_features:             false
   geometric_features_weight:          0.5 
   matching_mode:                      1
+  cloud_visualization_enabled:        false
+  
 
