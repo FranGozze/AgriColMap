@@ -9,7 +9,7 @@ opencv_contrib/
 data/
 params/output/results/*
 params/output/2018*
-params/output/RosarioV2Ground/*
+params/output/RosarioV2Ground*
 python/venv/
 python/SuperGluePretrainedNetwork/
 python/RoMa
@@ -19,3 +19,4 @@ cppzmq/
 params/output/__pycache__/
 *20180524-mavic-ugv-soybean-eschikon*
 python/imgs/
+imgs/
