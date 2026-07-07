@@ -32,17 +32,19 @@ def scale_matrix(A, s):
 
 def print_metrics(rowNumber, group):
     print("\nRegistration Error Metrics (averaged over successful cases):")
-    print("Scale_mag trans_mag yaw_mag row samples  Method   Transl Err  Angle Err  Scale Err")
+    print("Scale_mag trans_mag yaw_mag row succesRate  Method   Transl Err  Angle Err  Scale Err")
     
     for scale in sorted(group.keys()):
         for transl_noise in sorted(group[scale].keys()):
             for yaw_noise in sorted(group[scale][transl_noise].keys()):
                 for method in sorted(group[scale][transl_noise][yaw_noise].keys()):
-                    avg_transl_err = np.mean(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                    avg_angle_err = np.mean(group[scale][transl_noise][yaw_noise][method]['angle_err'])
-                    avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
                     samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                    print(f"{float(scale):.2f}%,      {(float(transl_noise)*2.5):.2f} m,  {float(yaw_noise):.2f}º,  {rowNumber},      {samples},   {method},   {float(avg_transl_err):.3f}m,     {float(avg_angle_err):.3f}º,    {(float(avg_scale_err)*100):.2f} %")
+                    if samples > 0:
+                        avg_transl_err = np.mean(group[scale][transl_noise][yaw_noise][method]['transl_err'])
+                        avg_angle_err = np.mean(group[scale][transl_noise][yaw_noise][method]['angle_err'])
+                        avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
+                        success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100
+                        print(f"{float(scale):.2f}%,      {(float(transl_noise)*2.5):.2f} m,  {float(yaw_noise):.2f}º,  {rowNumber},      {success_rate:.1f}%,   {method},   {float(avg_transl_err):.3f}m,     {float(avg_angle_err):.3f}º,    {(float(avg_scale_err)*100):.2f} %")
     print("\n")
 
 
@@ -63,8 +65,9 @@ def print_metrics_latex(row_number, group, label="Registration Error Metrics"):
                     avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
                     samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
                     # TODO: compute success rate and print it instead of samples/6
+                    success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100
                     print(
-                        f"& {samples / 6 * 100:.1f} \% & {method} & {float(avg_transl_err):.3f} & {float(avg_angle_err):.3f} & {(float(avg_scale_err)):.3f} \\\\")
+                        f"& {success_rate:.1f} \% & {method} & {float(avg_transl_err):.3f} & {float(avg_angle_err):.3f} & {(float(avg_scale_err)):.3f} \\\\")
     print("\\bottomrule")
     print("\\end{tabular}")
     print("\n")

@@ -6,6 +6,9 @@ import argparse
 
 debug = False
 latex = False
+overrule_validation = False
+
+
 def printDebugInfo(message):
     if debug:
         print(message)
@@ -77,6 +80,7 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
     succ_number = 0
 
     grouped_by = {}
+    global overrule_validation
 
 
 
@@ -112,28 +116,25 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
 
         curr_file = np.loadtxt(current_path)
         transl_err, angle_err, scale_err = calculate_errors(curr_file, s_gt5, s_init5, Aff_gt5, t_gt5)
-        if abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5:
+        if scale_noise_magnitude not in grouped_by:
+            grouped_by[scale_noise_magnitude] = {}
+        if transl_noise_magnitude not in grouped_by[scale_noise_magnitude]:
+            grouped_by[scale_noise_magnitude][transl_noise_magnitude] = {}
+        if yaw_noise_magnitude not in grouped_by[scale_noise_magnitude][transl_noise_magnitude]:
+            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude] = {}
+        if method not in grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude]:
+            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method] = {
+                "transl_err": [],
+                "angle_err": [],
+                "scale_err": [],
+                "count": 0
+            }
+        if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
         # if True:
             succ_number += 1
-            # print(f"Successful registration case: {file_name}")
-            # print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {(scale_err*100):.4f} % ")
-            if scale_noise_magnitude not in grouped_by:
-                grouped_by[scale_noise_magnitude] = {}
-            if transl_noise_magnitude not in grouped_by[scale_noise_magnitude]:
-                grouped_by[scale_noise_magnitude][transl_noise_magnitude] = {}
-            if yaw_noise_magnitude not in grouped_by[scale_noise_magnitude][transl_noise_magnitude]:
-                grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude] = {}
-            if method not in grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude]:
-                grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method] = {
-                    "transl_err": [],
-                    "angle_err": [],
-                    "scale_err": []
-                }
             grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["transl_err"].append(abs(transl_err))
             grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["angle_err"].append(abs(angle_err))
             grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["scale_err"].append(abs(scale_err))
-            
-            
         else:            
             # print("Aff:", Aff)            
             # print("Aff_gt5:", Aff_gt5)
@@ -141,7 +142,7 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
             fail_reasons += f" angle_err: {angle_err}" if abs(angle_err) > 0.1 else ""
             fail_reasons += f" scale_err: {scale_err}" if abs(scale_err) > 2.5 else ""
             printDebugInfo(f"Failed registration case: {file_name} ({fail_reasons})")
-
+        grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["count"] += 1
         counter += 1
 
     print(f"Processed: {counter}")
@@ -151,9 +152,9 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
         else:
             print_metrics(rowNumber,grouped_by)
         print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")
-        print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
-        print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
-        print(f"Max scale err: {max([max(grouped_by[scale][transl][yaw][method]['scale_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
+        # print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
+        # print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
+        # print(f"Max scale err: {max([max(grouped_by[scale][transl][yaw][method]['scale_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
     else:
         print("No valid cases processed.")
 
@@ -180,12 +181,16 @@ def main():
     parser.add_argument('-m', '--filter_method',  default=None, help='filter out cases without specific method selected')
     parser.add_argument('-d', '--debug', action="store_true", help='enable debug output')
     parser.add_argument('-l','--latex', action="store_true", help='output results in LaTeX table format')
+    parser.add_argument('--overrule_validation', action="store_true", help='overrule validation and consider all cases as successful')
 
     args = parser.parse_args()
     global latex
     latex = args.latex
     global debug 
     debug = args.debug
+    global overrule_validation
+    overrule_validation = args.overrule_validation
+
     root = Path(__file__).resolve().parent
     if args.complete:
         for x in [3,4,5]:
