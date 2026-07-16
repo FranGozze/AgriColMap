@@ -19,6 +19,17 @@ string getFeatureString(int feature){
         case 12: return "DAISY-Gabor";
         case 13: return "DAISY-HOG";
         case 14: return "DAISY-GABOR-HOG";
+        case 15: return "Exg-Daisy-Elev-Gabor";
+        case 16: return "Exg-Daisy-Elev-HOG";
+        case 17: return "Exg-Daisy-Elev-Gabor-HOG";
+        
+        case 18: return "Exg-Daisy-Elev-Daisy-Gabor";
+        case 19: return "Exg-Daisy-Elev-Daisy-HOG";
+        case 20: return "Exg-Daisy-Elev-Daisy-Gabor-HOG";
+
+        case 21: return "Exg-Elev-Daisy-Gabor";
+        case 22: return "Exg-Elev-Daisy-HOG";
+        case 23: return "Exg-Elev-Daisy-Gabor-HOG";
 		default: return "UNKWON";
 	}
 }
@@ -337,6 +348,8 @@ void PointCloudAligner::GroundTruthTransformPointCloud(const string &cloud_key){
     Transform gtTF;
     gtTF.translation() = GTtfMap[cloud_key]->_tgt;
     gtTF.linear() = GTtfMap[cloud_key]->_Rgt;
+    std::cerr << FBLU("Applying translation: ") << gtTF.translation().transpose() << "\n";
+    std::cerr << FBLU("Applying rotation: ") << "\n" << gtTF.linear() << "\n";
     pcl::transformPointCloud( *pclMap[cloud_key], *pclMap[cloud_key], gtTF );
 }
 

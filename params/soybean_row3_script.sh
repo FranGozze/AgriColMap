@@ -27,13 +27,13 @@ cd ../bin/
 
 # for TranslNoise in $(seq 0 100 200):
 # do	
-	for YNoise in 10 20:
+	for YNoise in 10
 	do
-		for Scale in $(seq 0 10 50):
+		for Scale in $(seq 40 10 50)
 		do
-			 for Mode in $(seq 12 1 14):
+			 for Mode in $(seq 21 1 23)
 			 do
-				for ExpID in $(seq 0 1 5):
+				for ExpID in $(seq 10 1 15)
 				do	
 					echo ${PARAMS_FILE_PATH1} ${Scale} 100 ${YNoise} ${ExpID} ${Mode}
 					./registration_node ${PARAMS_FILE_PATH1} ${Scale} 100 ${YNoise} ${ExpID} ${Mode}

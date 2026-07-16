@@ -62,11 +62,30 @@ while True:
     # img_exg = cv2.imread("imgs/received_img_0_exg.jpg", cv2.IMREAD_COLOR)  # For testing without ZMQ
     # id_method = 3  # For testing without ZMQ
     print(f"method: {id_method}")
-    feat_exg = methods[id_method](img_exg)
-    # print("Extracted features: ", feat_exg)
+    # if id_method < 0 or id_method >= len(methods):
+    #     print(f"Invalid method ID: {id_method}. Using default method (0).")
+    #     id_method = 0
+    if id_method < 15:
+        feat_exg = methods[id_method](img_exg)
+        # print("Extracted features: ", feat_exg)
 
-    H, W = img_exg.shape[:2]
-    feat_elev = np.zeros((H, W, 33), dtype=np.float32)
+        H, W = img_exg.shape[:2]
+        feat_elev = np.zeros((H, W, 33), dtype=np.float32)
+    elif id_method >= 15 and id_method <= 17:
+        feat_exg = methods[0](img_exg)
+        if id_method == 15:
+            feat_elev = methods[8](img_elev)
+        elif id_method == 16:
+            feat_elev = methods[7](img_elev)
+        elif id_method == 17:
+            feat_elev = methods[4](img_elev)
+    elif id_method >= 18 and id_method <= 20:
+        feat_exg = methods[0](img_exg)
+        feat_elev = methods[id_method - 6](img_elev)
+    elif id_method >= 21 and id_method <= 23:
+        feat_exg = methods[id_method - 9](img_exg)
+        feat_elev = methods[id_method - 9](img_elev)
+
 
     # ---- OPTIONAL: convert to uint8 here (faster) ----
     feat_exg = np.clip(feat_exg * 255, 0, 255).astype(np.uint8)
