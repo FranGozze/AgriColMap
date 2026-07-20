@@ -95,7 +95,7 @@ void PythonClient::extract(
     std::memcpy(outFtImg_Exg.pData, exg_msg.data(), H*W*C1);
     std::cout << "Copied EXG feature data" << std::endl;
 
-    // std::memcpy(outFtImg_Elev.pData, elev_msg.data(), H2*W2*33);
+    std::memcpy(outFtImg_Elev.pData, elev_msg.data(), H2*W2*C2);
     
     // for (int i = 0; i < H2 * W2 * C2; i++) {
     //     outFtImg_Elev.pData[i] =
