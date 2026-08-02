@@ -2,37 +2,6 @@
 
 using namespace std;
 
-string getFeatureString(int feature){
-	switch(feature){
-		case 0: return "DAISY";
-		case 1: return "Resnet";
-		case 2: return "SIFT";
-        case 3: return "Dino";
-        case 4: return "Gabor-HOG";
-        case 5: return "LSS";
-        case 6: return "Gabor-LSS";
-        case 7: return "HOG";
-		case 8: return "Gabor";
-        case 9: return "Gabor-HOG2";
-        case 10: return "Gabor-HOG2-LSS";
-		case 11: return "Resnet-M";
-        case 12: return "DAISY-Gabor";
-        case 13: return "DAISY-HOG";
-        case 14: return "DAISY-GABOR-HOG";
-        case 15: return "Exg-Daisy-Elev-Gabor";
-        case 16: return "Exg-Daisy-Elev-HOG";
-        case 17: return "Exg-Daisy-Elev-Gabor-HOG";
-        
-        case 18: return "Exg-Daisy-Elev-Daisy-Gabor";
-        case 19: return "Exg-Daisy-Elev-Daisy-HOG";
-        case 20: return "Exg-Daisy-Elev-Daisy-Gabor-HOG";
-
-        case 21: return "Exg-Elev-Daisy-Gabor";
-        case 22: return "Exg-Elev-Daisy-HOG";
-        case 23: return "Exg-Elev-Daisy-Gabor-HOG";
-		default: return "UNKWON";
-	}
-}
 
 PointCloudAligner::PointCloudAligner() : _R(Matrix3::Identity()),
                                                _t(Vector3::Zero()) {}
@@ -157,7 +126,7 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_rgb.png",rgb2);
     // img1.saveImage(getPackagePath() + "/imgs/" + cloud1_name + "_exg.png");
     // img2.saveImage(getPackagePath() + "/imgs/" + cloud2_name + "_exg.png");
-    std::cout << "Matching Mode: " << getFeatureString(matchingMode) << "\n";
+    std::cout << "Matching Mode: " << getFeatureString() << "\n";
 
     cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);
     // if (matchingMode == CPM_MATCHING)
@@ -281,7 +250,7 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     outputAffineTf.open (getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
                  to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
-                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt");
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString() + "_" + iter + + ".txt");
     outputAffineTf << _R(0,0) << " " << _R(0,1) << " " << _R(0,2) << " " << _t(0) << " "
                    << _R(1,0) << " " << _R(1,1) << " " << _R(1,2) << " " << _t(1) << " "
                    << _R(2,0) << " " << _R(2,1) << " " << _R(2,2) << " " << _t(2) << " "
@@ -292,7 +261,7 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     cerr << FBLU("Ground Truth Affine Transform Written in: ") << getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
                  to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
-                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString(matchingMode) + "_" + iter + + ".txt" << "\n";
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString() + "_" + iter + + ".txt" << "\n";
 }
 
 

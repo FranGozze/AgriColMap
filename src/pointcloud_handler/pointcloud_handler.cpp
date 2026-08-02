@@ -126,7 +126,8 @@ void PointCloudHandler::initFromYaml(const std::string& yaml_file){
         _cloudVisualizationEnabled = configuration["aligner_params"]["cloud_visualization_enabled"].as<bool>();
     if (configuration["aligner_params"]["s"])
         _s = configuration["aligner_params"]["s"].as<float>();
-
+    if (configuration["aligner_params"]["save_registered_clouds"])
+        _saveRegisteredClouds = configuration["aligner_params"]["save_registered_clouds"].as<bool>();
 }
 
 void PointCloudHandler::loadFromDisk(const std::string& fixed_cloud_key, const std::string& moving_cloud_key){
