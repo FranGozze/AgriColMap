@@ -244,6 +244,7 @@ void createFolder(const std::string& folder_path){
 
 void PointCloudAligner::writeAffineTransform(const string& iter, const string& cloud){
 
+    if(saveAffineTransform()){
     createFolder(getPackagePath() + "/params/output/" + getMovingCloudPath() );   
     Vector2 scale = getInitMovScale();
     ofstream outputAffineTf;
@@ -262,6 +263,7 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
                  to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
                  "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString() + "_" + iter + + ".txt" << "\n";
+    }
 }
 
 

@@ -56,6 +56,7 @@ class PointCloudHandler{
         void inline setMatchingMode(int mode){ matchingMode = mode; }
         bool inline cloudVisualizationEnabled(){ return _cloudVisualizationEnabled; }
         bool inline saveRegisteredClouds(){ return _saveRegisteredClouds; }
+        bool inline saveAffineTransform(){ return _save_affine_transform; }
         std::string inline getFeatureString(){
             switch(matchingMode){
                 case 0: return "DAISY";
@@ -84,6 +85,8 @@ class PointCloudHandler{
                 case 21: return "Exg-Elev-Daisy-Gabor";
                 case 22: return "Exg-Elev-Daisy-HOG";
                 case 23: return "Exg-Elev-Daisy-Gabor-HOG";
+
+                case 24: return "Daisy-FPFH";
                 default: return "UNKWON";
             }
         }
@@ -112,6 +115,7 @@ class PointCloudHandler{
         float _vis_feat_weight, _geom_feat_weight;
         bool _cloudVisualizationEnabled = false;
         bool _saveRegisteredClouds = false;
+        bool _saveAffineTransform = true;
         float _s = 0.02;
 
         // Algorithm Variables

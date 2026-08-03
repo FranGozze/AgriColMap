@@ -9,13 +9,15 @@ import torchvision.models as models
 
 from sklearn.decomposition import PCA
 
-from lightglue import SuperPoint
+# from lightglue import SuperPoint
 import matplotlib.cm as cm
 
 import base64
 import json
 
 import struct
+
+from pclpy import pcl
 
 # from enum import Enum
 
@@ -53,8 +55,8 @@ def get_matching_model(model_name=''):
             _MODEL_INSTANCE =  roma_outdoor(device=device)
         elif model_name == 'dino':
             _MODEL_INSTANCE = torch.hub.load('facebookresearch/dino:main', 'dino_vits8').eval().to(device)
-        elif model_name == 'superpoint':
-            _MODEL_INSTANCE =  SuperPoint(max_num_keypoints=None).eval().to(device)
+        # elif model_name == 'superpoint':
+        #     _MODEL_INSTANCE =  SuperPoint(max_num_keypoints=None).eval().to(device)
         elif model_name == 'resnet_multiscale':
             backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
             layer0 = nn.Sequential(
@@ -665,3 +667,112 @@ def extract_lbp(img):
         feat[:, :, i] = (lbp == i)
 
     return feat
+
+
+
+
+def create_xyz_cloud(cv_img_elev):
+    h, w, _ = cv_img_elev.shape
+
+    cloud = pcl.PointCloud.PointXYZ()
+    cloud_indexes = np.zeros((h, w), dtype=np.uint8)
+
+    points = []
+
+    for i in range(h):
+        for j in range(w):
+
+            x, y, z = cv_img_elev[i, j]
+
+            # Igual que tu CreateXYZCloud en C++
+            if x == 0 and y == 0 and z == 0:
+                continue
+
+            points.append([float(x), float(y), float(z)])
+            cloud_indexes[i, j] = 1
+    # cloud.from_array(np.asarray(points, dtype=np.float32))
+    points = np.asarray(points, dtype=np.float32)
+
+    cloud = pcl.PointCloud.PointXYZ(points)
+    
+
+    return cloud, cloud_indexes
+
+def normals_and_fpfh_estimation(cloud, ratio=0.0):
+
+    normals = pcl.PointCloud.Normal()
+
+    ne = pcl.features.NormalEstimation.PointXYZ_Normal()
+    ne.setInputCloud(cloud)
+
+    tree = pcl.search.KdTree.PointXYZ()
+    ne.setSearchMethod(tree)
+
+    ne.setRadiusSearch(0.1)
+    ne.compute(normals)
+
+    fpfh = pcl.PointCloud.FPFHSignature33()
+
+    est = pcl.features.FPFHEstimationOMP.PointXYZ_Normal_FPFHSignature33()
+    est.setNumberOfThreads(12)
+
+    est.setInputCloud(cloud)
+    est.setInputNormals(normals)
+    est.setSearchMethod(tree)
+
+    radius = 0.06 if ratio == 0 else 0.06 * ratio
+    est.setRadiusSearch(radius)
+
+    est.compute(fpfh)
+    print("FPFH size:", fpfh.size())
+    print("Width:", fpfh.width)
+    print("Height:", fpfh.height)
+    print(type(fpfh.histogram))
+
+    try:
+        print(fpfh.histogram.shape)
+    except Exception as e:
+        print(e)
+
+    print(type(fpfh.at(0)))
+    print(dir(fpfh.at(0)))
+    return normals, fpfh
+
+def extract_fpfh(cvImg_Elev, ratio=0.0):
+
+    cloud, cloud_indexes = create_xyz_cloud(cvImg_Elev)
+    normals, fpfh = normals_and_fpfh_estimation(cloud, ratio=ratio)
+
+    # Convert FPFH to numpy array
+    descriptors = fpfh.histogram.astype(np.float32)
+
+    norm = np.linalg.norm(descriptors, axis=1, keepdims=True)
+    norm = np.maximum(norm, 1e-12)
+
+    descriptors /= norm
+
+    # -------------------------------------------------------------------------
+    # Create dense descriptor image
+    # -------------------------------------------------------------------------
+    h,w,_ = cvImg_Elev.shape
+    outFtImg_Elev = np.zeros(
+        (h, w, 33),
+        dtype=np.uint8
+    )
+
+    mask = cloud_indexes.astype(bool)
+
+    outFtImg_Elev[mask] = np.clip(
+    np.round(descriptors * 255),
+    0,
+    255
+    ).astype(np.uint8)
+    # fpfh_array = np.asarray(fpfh_feat.points, dtype=np.float32)
+
+    # # Reshape FPFH to match the image dimensions (assuming the point cloud corresponds to the image)
+    # H, W, _ = daisy_feat.shape
+    # fpfh_array = fpfh_array.reshape(H, W, -1)
+
+    # feat = np.concatenate([daisy_feat, outFtImg_Elev], axis=2)
+
+    return outFtImg_Elev
