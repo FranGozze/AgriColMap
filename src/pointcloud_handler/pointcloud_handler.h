@@ -56,7 +56,7 @@ class PointCloudHandler{
         void inline setMatchingMode(int mode){ matchingMode = mode; }
         bool inline cloudVisualizationEnabled(){ return _cloudVisualizationEnabled; }
         bool inline saveRegisteredClouds(){ return _saveRegisteredClouds; }
-        bool inline saveAffineTransform(){ return _save_affine_transform; }
+        bool inline saveAffineTransform(){ return _saveAffineTransform; }
         std::string inline getFeatureString(){
             switch(matchingMode){
                 case 0: return "DAISY";
