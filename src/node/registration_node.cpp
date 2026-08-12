@@ -56,8 +56,17 @@ int main(int argc, char **argv)
         auto registered_cloud = pclAligner.getPcl(mov_cloud);
         *registered_cloud += *pclAligner.getPcl(fix_cloud);
 
+        
+        auto fix_soil_cloud = pclAligner.getSoilPcl(fix_cloud);
+        auto mov_soil_cloud = pclAligner.getSoilPcl(mov_cloud);
         createFolder(pclAligner.getPackagePath() + "/params/output/clouds/" + pclAligner.getMovingCloudPath());
         pcl::io::savePLYFileBinary(pclAligner.getPackagePath() + "/params/output/clouds/" + pclAligner.getMovingCloudPath() + "/" + pclAligner.getMovingCloudPath() + "_Registered_" + to_string(scaleMag) + "_" + to_string(TranslNoiseMag) + "_" + to_string(YawNoiseMag) + "_" + pclAligner.getFeatureString() + "_" + ExpIDStr + ".ply", *registered_cloud);
+        pcl::io::savePLYFileBinary(pclAligner.getPackagePath() + "/params/output/clouds/" + pclAligner.getMovingCloudPath() + "/" + pclAligner.getMovingCloudPath() + "_FixedSoil.ply", *fix_soil_cloud);
+        pcl::io::savePLYFileBinary(pclAligner.getPackagePath() + "/params/output/clouds/" + pclAligner.getMovingCloudPath() + "/" + pclAligner.getMovingCloudPath() + "_MovingSoil.ply", *mov_soil_cloud);
+        auto soil_cloud = pclAligner.getSoilPcl(mov_cloud);
+        *soil_cloud += *pclAligner.getSoilPcl(fix_cloud);
+        pcl::io::savePLYFileBinary(pclAligner.getPackagePath() + "/params/output/clouds/" + pclAligner.getMovingCloudPath() + "/" + pclAligner.getMovingCloudPath() + "_Soil_" + to_string(scaleMag) + "_" + to_string(TranslNoiseMag) + "_" + to_string(YawNoiseMag) + "_" + pclAligner.getFeatureString() + "_" + ExpIDStr + ".ply", *soil_cloud);
+        
     }
 
     if (pclAligner.cloudVisualizationEnabled())

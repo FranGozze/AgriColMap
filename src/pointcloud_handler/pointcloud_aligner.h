@@ -41,6 +41,7 @@ class PointCloudAligner : public PointCloudHandler{
         // getFunctions()
         PCLPointCloudXYZRGB::Ptr inline getFilteredPcl(const std::string& cloud_to_get){ return pclMapFiltered[cloud_to_get]; }
         PCLPointCloudXYZRGB::Ptr inline getPcl(const std::string& cloud_to_get){ return pclMap[cloud_to_get]; }
+        PCLPointCloudXYZRGB::Ptr inline getSoilPcl(const std::string& cloud_to_get){ return pclSoilMap[cloud_to_get]; }
 
         std::unordered_map<std::string, const boost::shared_ptr<EnvironmentRepresentation> > ERMap;
 

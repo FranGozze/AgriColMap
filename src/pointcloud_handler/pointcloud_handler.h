@@ -119,7 +119,7 @@ class PointCloudHandler{
         float _s = 0.02;
 
         // Algorithm Variables
-        PCLXYZRGB_unMap pclMap, pclMapFiltered, pclMapFilteredDownSampled;
+        PCLXYZRGB_unMap pclMap, pclMapFiltered, pclMapFilteredDownSampled, pclSoilMap;
         std::unordered_map< std::string, Vector3d> initGuessTMap;
         std::unordered_map< std::string, Vector3> initGuessQMap;
         GroundTruthUnorderedMap GTtfMap;

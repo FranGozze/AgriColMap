@@ -193,13 +193,20 @@ void PointCloudHandler::transformPointCloud( const Transform& tf,
 void PointCloudHandler::ExGFilterPCL(const string &cloud_key, const Vector3i& cloud_color){
 
     PCLPointCloudXYZRGB::Ptr data_filtered( new PCLPointCloudXYZRGB() );
+    PCLPointCloudXYZRGB::Ptr soil_filtered( new PCLPointCloudXYZRGB() );
+
     for(PCLptXYZRGB pt : pclMap[cloud_key]->points){
         if( (float) computeExGforXYZRGBPoint(pt) > 30){
             pt.r = cloud_color(0); pt.g = cloud_color(1); pt.b = cloud_color(2);
             data_filtered->points.push_back(pt);
         }
+        else 
+        if( (float) computeExGforXYZRGBPoint(pt) < 15){
+            soil_filtered->points.push_back(pt);
+        }
     }
     pclMapFiltered.emplace( cloud_key, data_filtered );
+    pclSoilMap.emplace( cloud_key, soil_filtered );
     return;
 }
 

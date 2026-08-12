@@ -312,6 +312,7 @@ void PointCloudAligner::computeAndApplyDOFTransform(const std::string& cloud1_na
     LDOF_tf.linear() = _R;
     pcl::transformPointCloud(*pclMap[cloud2_name], *pclMap[cloud2_name], LDOF_tf);
     pcl::transformPointCloud(*pclMapFiltered[cloud2_name], *pclMapFiltered[cloud2_name], LDOF_tf);
+    pcl::transformPointCloud(*pclSoilMap[cloud2_name], *pclSoilMap[cloud2_name], LDOF_tf);
 }
 
 void PointCloudAligner::GroundTruthTransformPointCloud(const string &cloud_key){
