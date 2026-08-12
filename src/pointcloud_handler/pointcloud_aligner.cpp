@@ -42,7 +42,7 @@ void PointCloudAligner::computeExGFilteredPointCloud(const string& cloud_key, co
 
 void PointCloudAligner::computeEnvironmentalModels(const string& mov_cloud_key, const string& fix_cloud_key){
 
-    std:cout << "s value: " << _s << "\n";
+    // std:cout << "s value: " << _s << "\n";
     ERMap.emplace( mov_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(mov_cloud_key) ) );
     ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], _s );
     ERMap[mov_cloud_key]->computeMMGridMap();
@@ -103,60 +103,10 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
 
     
-    std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" +  to_string(ERMap[cloud1_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud1_name]->getYCoord() + 13.0f) + "_exg.png", ERMap[cloud1_name]->getExgImg());
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_" + to_string(ERMap[cloud2_name]->getXCoord() + 13.0f) + "," + to_string(ERMap[cloud2_name]->getYCoord() + 13.0f) + "_exg.png",
-             ERMap[cloud2_name]->getExgImg());
-    cv::Mat exg1 = ERMap[cloud1_name]->getExgImg();
-    cv::Point2f center1( exg1.cols/2.0, exg1.rows/2.0 );
-    cv::circle(exg1, center1, 10, cv::Scalar(255, 255, 255), -1);
-    cv::Mat exg2 = ERMap[cloud2_name]->getExgImg();
-    cv::Point2f center( exg2.cols/2.0, exg2.rows/2.0 );
-    cv::circle(exg2, center, 10, cv::Scalar(255, 255, 255), -1);
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_centerpoint_exg.png",exg1);
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_exg.png",exg2);
-
-    cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg();
-    cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
-    cv::circle(rgb1, center2, 10, cv::Scalar(255, 255, 255), -1);
-    cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg();
-    cv::Point2f center3( rgb2.cols/2.0, rgb2.rows/2.0 );
-    cv::circle(rgb2, center3, 10, cv::Scalar(255, 255, 255), -1);
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_centerpoint_rgb.png",rgb1);
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_rgb.png",rgb2);
-    // img1.saveImage(getPackagePath() + "/imgs/" + cloud1_name + "_exg.png");
-    // img2.saveImage(getPackagePath() + "/imgs/" + cloud2_name + "_exg.png");
+    // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
     std::cout << "Matching Mode: " << getFeatureString() << "\n";
 
-    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);
-    // if (matchingMode == CPM_MATCHING)
-    //     cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
-    // else
-    // {
-    //     std::cout << "Using client matcher \n";
-    //     MatcherClient matcher;
-    //     MatchResult result = matcher.match(ERMap[cloud1_name]->getExgImg(), ERMap[cloud2_name]->getExgImg(), matchingMode);
-
-    //     FImage tmpMatch(4, result.pts1.size());
-    //     tmpMatch.setValue(-1);
-    //     for (size_t i = 0; i < result.pts1.size(); ++i) {
-    //         tmpMatch[i*4 + 0] = result.pts1[i].x;
-    //         tmpMatch[i*4 + 1] = result.pts1[i].y;
-    //         tmpMatch[i*4 + 2] = result.pts2[i].x;
-    //         tmpMatch[i*4 + 3] = result.pts2[i].y;
-    //     }
-    //     if (!matches.matchDimension(4, result.pts1.size(), 1))
-    //         matches.allocate(4, result.pts1.size(), 1);        
-    //     int tmpIdx = 0;
-    //     for (int i = 0; i < result.pts1.size(); i++){
-    //         if (tmpMatch[4 * i + 0] >= 0){
-    //             memcpy(matches.rowPtr(tmpIdx), tmpMatch.rowPtr(i), sizeof(int) * 4);
-    //             tmpIdx++;
-    //         }
-    //     }
-    //     std::cout << "Matched " << result.pts1.size() << " points.\n";    
-    // }
-
+    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);    
 }
 
 void PointCloudAligner::Match( const std::string& cloud1_name, const std::string& cloud2_name,

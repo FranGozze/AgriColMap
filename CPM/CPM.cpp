@@ -504,8 +504,8 @@ void CPM::imDaisy(FImage& img, FImage& imgCloud, const float& cloud_ratio, UCIma
         cv::Ptr<cv::xfeatures2d::DAISY> daisy =	cv::xfeatures2d::DAISY::create(5, 3, 4, 8, cv::xfeatures2d::DAISY::NRM_FULL, cv::noArray(), false, false);
         cv::Mat outFeatures_Exg;
         daisy->compute(cvImg_Exg, outFeatures_Exg);
-        std::cout << "W x H x C: " << w << " x " << h << " x " << channels << std::endl;
-        std::cout << "Computed features for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << std::endl;
+        // std::cout << "W x H x C: " << w << " x " << h << " x " << channels << std::endl;
+        // std::cout << "Computed features for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << std::endl;
 
         int itSize = outFeatures_Exg.cols;
         //outFtImg_Exg.allocate(w, h, itSize);

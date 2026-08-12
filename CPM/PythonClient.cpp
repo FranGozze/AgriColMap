@@ -78,22 +78,22 @@ void PythonClient::extract(
     int H2 = dims[3];
     int W2 = dims[4];
     int C2 = dims[5];
-    std::cout << "Received header: H=" << H << ", W=" << W << ", C1=" << C1
-              << ", H2=" << H2 << ", W2=" << W2 << ", C2=" << C2 << std::endl;
+    // std::cout << "Received header: H=" << H << ", W=" << W << ", C1=" << C1
+    //           << ", H2=" << H2 << ", W2=" << W2 << ", C2=" << C2 << std::endl;
     // ---- allocate outputs ----
     outFtImg_Exg.allocate(W, H, C1);
     outFtImg_Elev.allocate(W2, H2, C2);
-        std::cout << "Allocated output image memory" << std::endl;
+    // std::cout << "Allocated output image memory" << std::endl;
 
     // ---- copy directly into UCImage ----
     size_t size_exg = H * W * C1 * sizeof(float);
     size_t size_elev = H2 * W2 * C2 * sizeof(float);
 
     // const float* elev_ptr = static_cast<float*>(elev_msg.data());
-    std::cout << "Received feature data: exg size=" << size_exg << ", elev size=" << size_elev << std::endl;
+    // std::cout << "Received feature data: exg size=" << size_exg << ", elev size=" << size_elev << std::endl;
 
     std::memcpy(outFtImg_Exg.pData, exg_msg.data(), H*W*C1);
-    std::cout << "Copied EXG feature data" << std::endl;
+    // std::cout << "Copied EXG feature data" << std::endl;
 
     std::memcpy(outFtImg_Elev.pData, elev_msg.data(), H2*W2*C2);
     
@@ -102,7 +102,7 @@ void PythonClient::extract(
     //         static_cast<unsigned char>(std::round(elev_ptr[i] * 255));
     // }
 
-    std::cout << "Copied ELEV feature data" << std::endl;
+    // std::cout << "Copied ELEV feature data" << std::endl;
 
 }
 

@@ -105,5 +105,5 @@ while True:
         feat_elev.tobytes()
     ])
 
-    print("Processed a matching request. Features shape:", feat_exg.shape, feat_elev.shape)
+    # print("Processed a matching request. Features shape:", feat_exg.shape, feat_elev.shape)
     img_counter += 1
