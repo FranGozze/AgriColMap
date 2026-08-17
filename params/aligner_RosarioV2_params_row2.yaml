@@ -24,5 +24,8 @@ aligner_params:
   geometric_features_weight:          0.5 
   matching_mode:                      1
   cloud_visualization_enabled:        false
+  save_registered_clouds:             false
+  save_affine_transform:              true
+
   
 
