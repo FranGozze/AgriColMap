@@ -4,6 +4,7 @@
 
 using namespace std;
 
+
 class PointCloudHandler{
 
     public:
@@ -52,6 +53,44 @@ class PointCloudHandler{
         //boost::shared_ptr<GroundTruth> inline getGroundTruth(const std::string& cloud_name){ return GTMap[cloud_name]; }
         bool inline getVerbosityLevel(){return _verbosity;}
         const Vector2 inline getInitMovScale(){return _init_mov_scale;}
+        void inline setMatchingMode(int mode){ matchingMode = mode; }
+        bool inline cloudVisualizationEnabled(){ return _cloudVisualizationEnabled; }
+        bool inline saveRegisteredClouds(){ return _saveRegisteredClouds; }
+        bool inline saveAffineTransform(){ return _saveAffineTransform; }
+        std::string inline getFeatureString(){
+            switch(matchingMode){
+                case 0: return "DAISY";
+                case 1: return "Resnet";
+                case 2: return "SIFT";
+                case 3: return "Dino";
+                case 4: return "Gabor-HOG";
+                case 5: return "LSS";
+                case 6: return "Gabor-LSS";
+                case 7: return "HOG";
+                case 8: return "Gabor";
+                case 9: return "Gabor-HOG2";
+                case 10: return "Gabor-HOG2-LSS";
+                case 11: return "Resnet-M";
+                case 12: return "DAISY-Gabor";
+                case 13: return "DAISY-HOG";
+                case 14: return "DAISY-GABOR-HOG";
+                case 15: return "Exg-Daisy-Elev-Gabor";
+                case 16: return "Exg-Daisy-Elev-HOG";
+                case 17: return "Exg-Daisy-Elev-Gabor-HOG";
+                
+                case 18: return "Exg-Daisy-Elev-Daisy-Gabor";
+                case 19: return "Exg-Daisy-Elev-Daisy-HOG";
+                case 20: return "Exg-Daisy-Elev-Daisy-Gabor-HOG";
+
+                case 21: return "Exg-Elev-Daisy-Gabor";
+                case 22: return "Exg-Elev-Daisy-HOG";
+                case 23: return "Exg-Elev-Daisy-Gabor-HOG";
+
+                case 24: return "Daisy-FPFH";
+                default: return "UNKWON";
+            }
+        }
+
 
     protected:
 
@@ -74,9 +113,13 @@ class PointCloudHandler{
         bool _useVisualFeatures = true;
         bool _useGeometricFeatures = true;
         float _vis_feat_weight, _geom_feat_weight;
+        bool _cloudVisualizationEnabled = false;
+        bool _saveRegisteredClouds = false;
+        bool _saveAffineTransform = true;
+        float _s = 0.02;
 
         // Algorithm Variables
-        PCLXYZRGB_unMap pclMap, pclMapFiltered, pclMapFilteredDownSampled;
+        PCLXYZRGB_unMap pclMap, pclMapFiltered, pclMapFilteredDownSampled, pclSoilMap;
         std::unordered_map< std::string, Vector3d> initGuessTMap;
         std::unordered_map< std::string, Vector3> initGuessQMap;
         GroundTruthUnorderedMap GTtfMap;
@@ -84,12 +127,14 @@ class PointCloudHandler{
         Vector2 _scaleNoise;
         Vector2d _TranslNoise;
         float _YawNoise;
-
+        float _scaleNoiseMagnitude, _translNoiseMagnitude, _yawNoiseMagnitude;
 
         // Strings and types that encode the paths and the extensions for the Point-Clouds to measure
 		std::string _fixed_pcl_path, _moving_pcl_path, _fixed_pcl, _moving_pcl;
 
         // Relative Scale
         Vector2 _init_mov_scale;
+
+        int matchingMode = 0;
 
 };

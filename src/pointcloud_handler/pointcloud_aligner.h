@@ -1,6 +1,8 @@
 #pragma once
 #include "pointcloud_handler.h"
 
+
+
 class PointCloudAligner : public PointCloudHandler{
 
     public:
@@ -39,6 +41,7 @@ class PointCloudAligner : public PointCloudHandler{
         // getFunctions()
         PCLPointCloudXYZRGB::Ptr inline getFilteredPcl(const std::string& cloud_to_get){ return pclMapFiltered[cloud_to_get]; }
         PCLPointCloudXYZRGB::Ptr inline getPcl(const std::string& cloud_to_get){ return pclMap[cloud_to_get]; }
+        PCLPointCloudXYZRGB::Ptr inline getSoilPcl(const std::string& cloud_to_get){ return pclSoilMap[cloud_to_get]; }
 
         std::unordered_map<std::string, const boost::shared_ptr<EnvironmentRepresentation> > ERMap;
 
@@ -63,6 +66,7 @@ class PointCloudAligner : public PointCloudHandler{
 
         void finalRefinement(const std::string& cloud1_name,
                              const std::string& cloud2_name);
+        void getMatches(const std::string& cloud1_name, const std::string& cloud2_name);
 
         FImage img1, img1Cloud, img2, img2Cloud, matches, filteredMatches;
 
@@ -74,4 +78,6 @@ class PointCloudAligner : public PointCloudHandler{
         Vector3 _t;
 
         vector<Vector3> fix_pts, mov_pts;
+        
+        // Matching Mode        
 };

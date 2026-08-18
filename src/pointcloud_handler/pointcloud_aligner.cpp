@@ -2,6 +2,7 @@
 
 using namespace std;
 
+
 PointCloudAligner::PointCloudAligner() : _R(Matrix3::Identity()),
                                                _t(Vector3::Zero()) {}
 
@@ -41,13 +42,13 @@ void PointCloudAligner::computeExGFilteredPointCloud(const string& cloud_key, co
 
 void PointCloudAligner::computeEnvironmentalModels(const string& mov_cloud_key, const string& fix_cloud_key){
 
-
+    // std:cout << "s value: " << _s << "\n";
     ERMap.emplace( mov_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(mov_cloud_key) ) );
-    ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], 0.02 );
+    ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], _s );
     ERMap[mov_cloud_key]->computeMMGridMap();
 
     ERMap.emplace( fix_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(fix_cloud_key) ) );
-    ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], 0.02, _initTfMap[mov_cloud_key]->translation().head(2) );
+    ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], _s, _initTfMap[mov_cloud_key]->translation().head(2) );
     ERMap[fix_cloud_key]->computeMMGridMap();
 
     return;
@@ -60,7 +61,9 @@ void PointCloudAligner::downsaplePointCloud(const string &cloud_key, const float
 }
 
 void PointCloudAligner::addNoise(const std::string& cloud_key, const float& scaleMag, const float& TranslMag, const float& YawMag){
-
+    _scaleNoiseMagnitude = scaleMag;
+    _translNoiseMagnitude = TranslMag;
+    _yawNoiseMagnitude = YawMag;
     srand (time(NULL));
     Vector2d vd(1.f, 0.f);
     Vector2 v(1.f,0.f);
@@ -92,17 +95,29 @@ void PointCloudAligner::addNoise(const std::string& cloud_key, const float& scal
     cerr << FBLU(" Scale Noise: ") << vS.transpose() << FBLU(" Scale Norm: ") << vS.norm() << "\n";
 }
 
-void PointCloudAligner::Match( const std::string& cloud1_name, const std::string& cloud2_name,
-                               const Eigen::Vector2f& scale, const string& iter_num, const cv::Size& size ){
-
-    cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
-    cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
+void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::string& cloud2_name)
+{   
     img1.imcopy( ERMap[cloud1_name]->getExgImg() );
     img2.imcopy( ERMap[cloud2_name]->getExgImg() );
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
 
-    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
+    
+    // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
+    std::cout << "Matching Mode: " << getFeatureString() << "\n";
+
+    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);    
+}
+
+void PointCloudAligner::Match( const std::string& cloud1_name, const std::string& cloud2_name,
+                               const Eigen::Vector2f& scale, const string& iter_num, const cv::Size& size){
+
+    cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
+    cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
+    
+    getMatches(cloud1_name, cloud2_name);
+                                    
+    // cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
 
     if( _storeDenseOptFlw )
         WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
@@ -171,14 +186,22 @@ void PointCloudAligner::WriteDenseOpticalFlow(const int& w, const int& h, const 
     OpticFlowIO::SaveFlowAsImage(img_path.c_str(), u.pData, v.pData, w, h);
 }
 
+void createFolder(const std::string& folder_path){
+    if (!std::filesystem::exists(folder_path)) {
+        std::filesystem::create_directories(folder_path);
+    }
+}
 
 void PointCloudAligner::writeAffineTransform(const string& iter, const string& cloud){
 
+    if(saveAffineTransform()){
+    createFolder(getPackagePath() + "/params/output/" + getMovingCloudPath() );   
     Vector2 scale = getInitMovScale();
     ofstream outputAffineTf;
-    outputAffineTf.open (getPackagePath() + "/params/output/results/" + getMovingCloudPath() +
-                         "_AffineGroundTruth_" + iter + "_" + to_string( (_scaleNoise-Vector2(1,1)).norm() ) + "_" +
-                         to_string( _TranslNoise.norm() ) + "_" + to_string( _YawNoise ) + ".txt");
+    outputAffineTf.open (getPackagePath() + "/params/output/" +
+                 getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
+                 to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString() + "_" + iter + + ".txt");
     outputAffineTf << _R(0,0) << " " << _R(0,1) << " " << _R(0,2) << " " << _t(0) << " "
                    << _R(1,0) << " " << _R(1,1) << " " << _R(1,2) << " " << _t(1) << " "
                    << _R(2,0) << " " << _R(2,1) << " " << _R(2,2) << " " << _t(2) << " "
@@ -188,8 +211,9 @@ void PointCloudAligner::writeAffineTransform(const string& iter, const string& c
     outputAffineTf.close();
     cerr << FBLU("Ground Truth Affine Transform Written in: ") << getPackagePath() + "/params/output/" +
                  getMovingCloudPath() + "/" + getMovingCloudPath() + "_AffineGroundTruth_" +
-                 iter + "_" + to_string( _scaleNoise.norm() ) + "_" + to_string( _TranslNoise.norm() ) +
-                 "_" + to_string( _YawNoise) + ".txt" << "\n";
+                 to_string( _scaleNoiseMagnitude ) + "_" + to_string( _translNoiseMagnitude ) +
+                 "_" + to_string( _yawNoiseMagnitude ) + "_" + getFeatureString() + "_" + iter + + ".txt" << "\n";
+    }
 }
 
 
@@ -238,6 +262,7 @@ void PointCloudAligner::computeAndApplyDOFTransform(const std::string& cloud1_na
     LDOF_tf.linear() = _R;
     pcl::transformPointCloud(*pclMap[cloud2_name], *pclMap[cloud2_name], LDOF_tf);
     pcl::transformPointCloud(*pclMapFiltered[cloud2_name], *pclMapFiltered[cloud2_name], LDOF_tf);
+    pcl::transformPointCloud(*pclSoilMap[cloud2_name], *pclSoilMap[cloud2_name], LDOF_tf);
 }
 
 void PointCloudAligner::GroundTruthTransformPointCloud(const string &cloud_key){
@@ -245,6 +270,8 @@ void PointCloudAligner::GroundTruthTransformPointCloud(const string &cloud_key){
     Transform gtTF;
     gtTF.translation() = GTtfMap[cloud_key]->_tgt;
     gtTF.linear() = GTtfMap[cloud_key]->_Rgt;
+    std::cerr << FBLU("Applying translation: ") << gtTF.translation().transpose() << "\n";
+    std::cerr << FBLU("Applying rotation: ") << "\n" << gtTF.linear() << "\n";
     pcl::transformPointCloud( *pclMap[cloud_key], *pclMap[cloud_key], gtTF );
 }
 
