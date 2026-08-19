@@ -18,3 +18,6 @@ target_link_libraries(visualization_node_soybean_init_guess pointcloud_aligner_l
 
 add_executable(visualization_node_ground_truth visualization_node_ground_truth.cpp)
 target_link_libraries(visualization_node_ground_truth pointcloud_aligner_lib yaml-cpp visualizer_lib zmq nlohmann_json::nlohmann_json)
+
+add_executable(one_frame_node one_frame_node.cpp)
+target_link_libraries(one_frame_node pointcloud_generator_lib pointcloud_aligner_lib yaml-cpp visualizer_lib zmq nlohmann_json::nlohmann_json)
