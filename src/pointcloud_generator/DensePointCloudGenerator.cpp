@@ -144,6 +144,12 @@ void DensePointCloudGenerator::initFromYaml(const std::string &yaml_file)
     max_depth_ = configuration["depth"]["max_depth"].as<double>();
   if (configuration["depth"]["min_depth"])
     min_depth_ = configuration["depth"]["min_depth"].as<double>();
+
+  input_rgb = configuration["input_rgb"] ? configuration["input_rgb"].as<std::string>() : "/maps/frames-RosarioV2-row2/rgb/1703261894400792837.png";     
+  input_irR = configuration["input_irR"] ? configuration["input_irR"].as<std::string>() : "/maps/frames-RosarioV2-row2/infra_left(2)/infra2_1703261894400734901.png";
+  input_irL = configuration["input_irL"] ? configuration["input_irL"].as<std::string>() : "/maps/frames-RosarioV2-row2/infraRight(1)/infra1_1703261894400734901.png";
+  input_csv = configuration["input_csv"] ? configuration["input_csv"].as<std::string>() : "/maps/frames-RosarioV2-row2/utm_jpg_final.csv";
+  input_timestamp_rgb = configuration["input_timestamp_rgb"] ? configuration["input_timestamp_rgb"].as<std::string>() : "1703261894400792837";
 }
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr
@@ -220,18 +226,18 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
         pcl::PointXYZRGB &pt = cloud->at(x, y);
         if (d > 0.0f && x >= static_cast<int>(width * 0.2) && x < static_cast<int>(width * 0.8))
         {
-          const double Z = intrinsics_ir1.fx * baseline_m_ / d;
+          const double Z = intrinsics_ir2.fx * baseline_m_ / d;
           if (Z > min_depth_ && Z < max_depth_)
           {
             // std::cout << "Disparity at (" << x << ", " << y << "): " << d << ", Depth: " << Z << "\n";
-            const double X = (x - intrinsics_ir1.cx) * Z / intrinsics_ir1.fx;
-            const double Y = (y - intrinsics_ir1.cy) * Z / intrinsics_ir1.fy;
+            const double X = (x - intrinsics_ir2.cx) * Z / intrinsics_ir2.fx;
+            const double Y = (y - intrinsics_ir2.cy) * Z / intrinsics_ir2.fy;
             cv::Mat_<double> pt_ir2 = (cv::Mat_<double>(4, 1) << X, Y, Z,0.0);
 
             // 3. Transformar el punto 3D del sistema IR2 al sistema RGB
             // P_rgb = R * P_ir2 + T
-            cv::Mat pt_rgb_mat = T_ir2_rgb * pt_ir2;
-
+            cv::Mat pt_rgb_mat = T_ir2_rgb * pt_ir2;          
+            
             const double pt_x = pt_rgb_mat.at<double>(0, 0);
             const double pt_y = pt_rgb_mat.at<double>(1, 0);
             const double pt_z = pt_rgb_mat.at<double>(2, 0);
