@@ -64,11 +64,11 @@ int main(int argc, char **argv)
     // }
     DensePointCloudGenerator pointcloud_generator;
     pointcloud_generator.initFromYaml(argv[1]);
-    string input_rgb = pointcloud_generator.getPackagePath() + "/maps/frames-RosarioV2-row2/1703261894400792837.png";
-    string input_irL = pointcloud_generator.getPackagePath() + "/maps/frames-RosarioV2-row2/infra1_1703261894400734901.png";
-    string input_irR = pointcloud_generator.getPackagePath() + "/maps/frames-RosarioV2-row2/infra2_1703261894400734901.png";
-    string input_csv = pointcloud_generator.getPackagePath() + "/maps/frames-RosarioV2-row2/utm_jpg_final.csv";
-    string input_timestamp_rgb = "1703261894400792837";
+    string input_rgb = pointcloud_generator.getInputRGBPath();
+    string input_irR = pointcloud_generator.getInputIRRPath();
+    string input_irL = pointcloud_generator.getInputIRLPath();
+    string input_csv = pointcloud_generator.getInputCSVPath();
+    string input_timestamp_rgb = pointcloud_generator.getInputTimestampRGB();
     cv::Mat rgb;
     cv::Mat irL;
     cv::Mat irR;
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     auto pointcloud = pointcloud_generator.generate(rgb, irL, irR);
     utm utm_data = getUTMFromCSV(input_csv, input_timestamp_rgb);
     std::cout << "UTM Data: Easting: " << utm_data.easting << ", Northing: "  << utm_data.northing << ", Altitude: "<< utm_data.altitude << ", Zone: " << utm_data.zone << std::endl;
-    pcl::io::savePLYFileBinary(pointcloud_generator.getPackagePath() + "/params/output/clouds/pointcloud_generated.ply", *pointcloud);
+    pcl::io::savePLYFileBinary(pointcloud_generator.getOutputPath(), *pointcloud);
 
     // PointCloudViz viz;
     // viz.setViewerBackground(255, 255, 255);
