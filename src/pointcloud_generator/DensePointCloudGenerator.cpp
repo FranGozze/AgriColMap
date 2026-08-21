@@ -215,7 +215,9 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
     cv::Mat disp16s, disp;
     sgbm->compute(irL, irR, disp16s);
     disp16s.convertTo(disp, CV_32F, 1.0 / 16.0);
-
+    // disp.normalize(0, 255, cv::NORM_MINMAX, CV_8U);
+    // cv::Mat depth_map = intrinsics_ir2.fx * baseline_m_ / disp; // Depth map in meters
+    // cv::imwrite(getPackagePath() + "/params/output/clouds/" + input_timestamp_rgb + "_depth_map.png", depth_map);
     // Reconstruct depth in the left IR camera frame using the left IR intrinsics
     // and the baseline between the two IR cameras.
     for (int y = 0; y < height; ++y)
@@ -224,7 +226,7 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
       {        
         const float d = disp.at<float>(y, x);
         pcl::PointXYZRGB &pt = cloud->at(x, y);
-        if (d > 0.0f && x >= static_cast<int>(width * 0.2) && x < static_cast<int>(width * 0.8))
+        if (d > 0.0f ) //&& x >= static_cast<int>(width * 0.2) && x < static_cast<int>(width * 0.8)
         {
           const double Z = intrinsics_ir2.fx * baseline_m_ / d;
           if (Z > min_depth_ && Z < max_depth_)
@@ -262,7 +264,7 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
         pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
         pt.r = pt.g = pt.b = 0;
       }
-    }
+    }    
   }
   // else
   // {
@@ -303,7 +305,7 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
   //     }
   //   }
   // }
-
+  
   return cloud;
 }
 

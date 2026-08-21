@@ -1,7 +1,20 @@
 #include "../visualizer/visualizer.h"
 #include "../pointcloud_generator/DensePointCloudGenerator.h"
+#include <vector>
 
 using namespace std;
+
+namespace fs = std::filesystem;
+
+// Helper to grab and sort paths in one go
+std::vector<fs::path> getSortedPaths(const fs::path& dir) {
+    std::vector<fs::path> p;
+    if (fs::exists(dir) && fs::is_directory(dir))
+        for (const auto& entry : fs::directory_iterator(dir))
+            if (entry.is_regular_file()) p.push_back(entry.path());
+    std::sort(p.begin(), p.end());
+    return p;
+}
 
 void createFolder(const std::string &folder_path)
 {
@@ -64,22 +77,40 @@ int main(int argc, char **argv)
     // }
     DensePointCloudGenerator pointcloud_generator;
     pointcloud_generator.initFromYaml(argv[1]);
-    string input_rgb = pointcloud_generator.getInputRGBPath();
-    string input_irR = pointcloud_generator.getInputIRRPath();
-    string input_irL = pointcloud_generator.getInputIRLPath();
+
+
+    // string input_rgb = pointcloud_generator.getInputRGBPath();
+    // string input_irR = pointcloud_generator.getInputIRRPath();
+    // string input_irL = pointcloud_generator.getInputIRLPath();
     string input_csv = pointcloud_generator.getInputCSVPath();
-    string input_timestamp_rgb = pointcloud_generator.getInputTimestampRGB();
-    cv::Mat rgb;
-    cv::Mat irL;
-    cv::Mat irR;
-    rgb = cv::imread(input_rgb);
-    irL = cv::imread(input_irL, cv::IMREAD_GRAYSCALE);
-    irR = cv::imread(input_irR, cv::IMREAD_GRAYSCALE);
-    std::cout << "Starting One Frame Node" << std::endl;
-    auto pointcloud = pointcloud_generator.generate(rgb, irL, irR);
-    utm utm_data = getUTMFromCSV(input_csv, input_timestamp_rgb);
-    std::cout << "UTM Data: Easting: " << utm_data.easting << ", Northing: "  << utm_data.northing << ", Altitude: "<< utm_data.altitude << ", Zone: " << utm_data.zone << std::endl;
-    pcl::io::savePLYFileBinary(pointcloud_generator.getOutputPath(), *pointcloud);
+    auto irR_f = getSortedPaths(pointcloud_generator.getInputIRRPath());
+    auto irL_f = getSortedPaths(pointcloud_generator.getInputIRLPath());
+    auto rgb_f = getSortedPaths(pointcloud_generator.getInputRGBPath());
+    if (irR_f.size() != irL_f.size() || irR_f.size() != rgb_f.size()) {
+        std::cerr << "Error: Folder sizes do not match!\n";
+        return -1;
+    }
+    for (size_t i = 0; i < irR_f.size(); ++i) {
+        cv::Mat rgb;
+        cv::Mat irL;
+        cv::Mat irR;
+        rgb = cv::imread(pointcloud_generator.getInputRGBPath() + rgb_f[i].filename().string());
+        irL = cv::imread(pointcloud_generator.getInputIRLPath() + irL_f[i].filename().string(), cv::IMREAD_GRAYSCALE);
+        irR = cv::imread(pointcloud_generator.getInputIRRPath() + irR_f[i].filename().string(), cv::IMREAD_GRAYSCALE);        
+        pointcloud_generator.setInputTimestampRGB(rgb_f[i].filename().stem().string());
+        std::cout << "Zipped: " << rgb_f[i].filename() << " | " 
+                  << irL_f[i].filename() << " | " 
+                  << irR_f[i].filename() << "\n";
+        std::cout << "Generating PointCloud" << std::endl;
+
+        auto pointcloud = pointcloud_generator.generate(rgb, irL, irR);        
+        utm utm_data = getUTMFromCSV(input_csv, pointcloud_generator.getInputTimestampRGB());
+        std::cout << "UTM Data: Easting: " << utm_data.easting << ", Northing: "  << utm_data.northing << ", Altitude: "<< utm_data.altitude << ", Zone: " << utm_data.zone << std::endl;
+        pcl::io::savePLYFileBinary(pointcloud_generator.getOutputPath(), *pointcloud);
+        // Use your files here safely and in order
+        
+    }
+    
 
     // PointCloudViz viz;
     // viz.setViewerBackground(255, 255, 255);
