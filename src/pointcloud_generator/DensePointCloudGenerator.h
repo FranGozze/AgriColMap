@@ -37,6 +37,7 @@ public:
   std::string inline getInputIRRPath()  { return getPackagePath() + input_irR; }
   std::string inline getInputCSVPath()  { return getPackagePath() + input_csv; }
   std::string inline getInputTimestampRGB()  { return input_timestamp_rgb; }
+  void inline setInputTimestampRGB(const std::string &timestamp)  { input_timestamp_rgb = timestamp; }
 
 
 private:
