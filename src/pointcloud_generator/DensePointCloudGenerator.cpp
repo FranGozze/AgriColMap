@@ -6,46 +6,11 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
-DensePointCloudGenerator::DensePointCloudGenerator() {}
+DensePointCloudGenerator::DensePointCloudGenerator() {transformationMatrix = cv::Mat::eye(4,4,CV_64F);}
 DensePointCloudGenerator::~DensePointCloudGenerator() {}
 
 
 void DensePointCloudGenerator::setBaseline(double baseline_m) { baseline_m_ = baseline_m; }
-
-
-intrinsics generateIntrinsics(std::vector<double> K_vec){
-  if (K_vec.size() >= 4)
-    {
-      intrinsics intrinsics;
-      intrinsics.fx = K_vec[0];
-      intrinsics.fy = K_vec[1];
-      intrinsics.cx = K_vec[2];
-      intrinsics.cy = K_vec[3];
-      return intrinsics;
-    }
-  else
-    {
-      std::cerr << "Error: K vector must have at least 4 elements." << std::endl;
-      return intrinsics();
-    }
-}
-
-cv::Mat generateDistortionCoeffs(std::vector<double> dist_vec){
-  if (!dist_vec.empty())
-    {
-      cv::Mat dist = cv::Mat(1, static_cast<int>(dist_vec.size()), CV_64F);
-      for (size_t i = 0; i < dist_vec.size(); ++i)
-      {
-        dist.at<double>(0, static_cast<int>(i)) = dist_vec[i];
-      }
-      return dist;
-    }
-  else
-    {
-      std::cerr << "Error: Distortion vector is empty." << std::endl;
-      return cv::Mat();
-    }
-}
 
 cv::Mat generateTransformationMatrix(std::vector<std::vector<double>> T_vec){
   if (T_vec.size() >= 4 && T_vec[0].size() >= 4)
@@ -65,6 +30,8 @@ cv::Mat generateTransformationMatrix(std::vector<std::vector<double>> T_vec){
     }
 }
 
+
+
 void DensePointCloudGenerator::initFromYaml(const std::string &yaml_file)
 {
   cerr << FBLU("Initializing from:") << " " << yaml_file << "\n"
@@ -75,7 +42,6 @@ void DensePointCloudGenerator::initFromYaml(const std::string &yaml_file)
   // "camera_intrinsics.K" and "camera_intrinsics.D" (ROS/OpenCV format), while
   // other configs may still use "distortion_coeffs".
   const YAML::Node rgb = configuration["rgb_intrinsics"];
-  if (rgb)
   {
     if (!rgb["intrinsics"] || !(rgb["D"] || rgb["distortion_coeffs"]))
     {
@@ -83,16 +49,14 @@ void DensePointCloudGenerator::initFromYaml(const std::string &yaml_file)
       return;
     }
     std::vector<double> K_vec = rgb["intrinsics"].as<std::vector<double>>();
-    intrinsics_rgb = generateIntrinsics(K_vec);
-  
     const YAML::Node dist_node = rgb["D"] ? rgb["D"] : rgb["distortion_coeffs"];
     std::vector<double> dist_vec = dist_node.as<std::vector<double>>();
-    dist_coeff_rgb = generateDistortionCoeffs(dist_vec);
+
+    rgb_calib.setCalibration(K_vec, dist_vec);
   
   }
 
   const YAML::Node ir1 = configuration["ir1_intrinsics"];
-  if (ir1)
   {
     if (!ir1["intrinsics"] || !(ir1["D"] || ir1["distortion_coeffs"]))
     {
@@ -100,42 +64,53 @@ void DensePointCloudGenerator::initFromYaml(const std::string &yaml_file)
       return;
     }
     std::vector<double> K_vec = ir1["intrinsics"].as<std::vector<double>>();
-    intrinsics_ir1 = generateIntrinsics(K_vec);
-  
     const YAML::Node dist_node = ir1["D"] ? ir1["D"] : ir1["distortion_coeffs"];
     std::vector<double> dist_vec = dist_node.as<std::vector<double>>();
-    dist_coeff_ir1 = generateDistortionCoeffs(dist_vec);
-  
+    irR_calib.setCalibration(K_vec,dist_vec);  
   }
-  const YAML::Node ir2 = configuration["ir2_intrinsics"];
-  if (ir2)
-  {
-    if (!ir2["intrinsics"] || !(ir2["D"] || ir2["distortion_coeffs"]) || !ir2["T_cn_ir1"] || !ir2["T_cn_rgb"])
-    {
-      std::cerr << "Error: IR2 intrinsics missing required matrices in YAML." << std::endl;
-      return;
-    }
-    std::vector<double> K_vec = ir2["intrinsics"].as<std::vector<double>>();
-    intrinsics_ir2 = generateIntrinsics(K_vec);
-  
-    const YAML::Node dist_node = ir2["D"] ? ir2["D"] : ir2["distortion_coeffs"];
-    std::vector<double> dist_vec = dist_node.as<std::vector<double>>();
-    dist_coeff_ir2 = generateDistortionCoeffs(dist_vec);
-  
-    T_ir2_ir1 = generateTransformationMatrix(ir2["T_cn_ir1"].as<std::vector<std::vector<double>>>());
-    
-    std::cout << "IR2 Transformation to RGB:\n" << ir2["T_cn_rgb"] << "\n";
-    T_ir2_rgb = generateTransformationMatrix(ir2["T_cn_rgb"].as<std::vector<std::vector<double>>>());
 
-    // Extract baseline from transformation matrix (translation component)
-    if (!T_ir2_ir1.empty() && T_ir2_ir1.rows == 4 && T_ir2_ir1.cols == 4)
-    {
-      double tx = T_ir2_ir1.at<double>(0, 3);
-      double ty = T_ir2_ir1.at<double>(1, 3);
-      double tz = T_ir2_ir1.at<double>(2, 3);
-      baseline_m_ = std::sqrt(tx*tx + ty*ty + tz*tz);
-    }
+  const YAML::Node ir2 = configuration["ir2_intrinsics"];
+{
+      if (!ir2["intrinsics"] || !(ir2["D"] || ir2["distortion_coeffs"]) || !ir2["T_cn_ir1"] || !ir2["T_cn_rgb"])
+  {
+    std::cerr << "Error: IR2 intrinsics missing required matrices in YAML." << std::endl;
+    return;
   }
+  std::vector<double> K_vec = ir2["intrinsics"].as<std::vector<double>>();
+  const YAML::Node dist_node = ir2["D"] ? ir2["D"] : ir2["distortion_coeffs"];
+  std::vector<double> dist_vec = dist_node.as<std::vector<double>>();
+  
+  irL_calib.setCalibration(K_vec, dist_vec);
+
+  T_ir2_ir1 = generateTransformationMatrix(ir2["T_cn_ir1"].as<std::vector<std::vector<double>>>());
+  
+  T_ir2_rgb = generateTransformationMatrix(ir2["T_cn_rgb"].as<std::vector<std::vector<double>>>());
+
+  // Extract baseline from transformation matrix (translation component)
+  if (!T_ir2_ir1.empty() && T_ir2_ir1.rows == 4 && T_ir2_ir1.cols == 4)
+  {
+    double tx = T_ir2_ir1.at<double>(0, 3);
+    double ty = T_ir2_ir1.at<double>(1, 3);
+    double tz = T_ir2_ir1.at<double>(2, 3);
+    baseline_m_ = std::sqrt(tx*tx + ty*ty + tz*tz);
+  }
+}
+  
+  cv::Size imageSize(1280, 720);
+  // rectify of both ir cameras
+  cv::stereoRectify(irL_calib.getK(), irL_calib.getDistortionCoeff(), irR_calib.getK(), irR_calib.getDistortionCoeff(),
+            imageSize, T_ir2_ir1(cv::Range(0, 3), cv::Range(0, 3)), T_ir2_ir1(cv::Range(0, 3), cv::Range(3, 4)),
+             R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, 0, imageSize);
+
+  cv::initUndistortRectifyMap(irL_calib.getK(), irL_calib.getDistortionCoeff(), R1, P1,imageSize, CV_32FC1, l_mapx, l_mapy);
+  
+  // rectify of left ir and rgb cameras
+  cv::stereoRectify(irL_calib.getK(), irL_calib.getDistortionCoeff(), rgb_calib.getK(), rgb_calib.getDistortionCoeff(),
+            imageSize, T_ir2_rgb(cv::Range(0, 3), cv::Range(0, 3)), T_ir2_rgb(cv::Range(0, 3), cv::Range(3, 4)),
+             R3, R4, P3, P4, Q2, cv::CALIB_ZERO_DISPARITY, 0, imageSize);
+
+  cv::initUndistortRectifyMap(rgb_calib.getK(), rgb_calib.getDistortionCoeff(), R4, P4,imageSize, CV_32FC1, rgb_mapx, rgb_mapy);
+  
 
   // Loading other parameters from YAML
   // if (configuration["stereo"]["baseline_m"])
@@ -150,6 +125,24 @@ void DensePointCloudGenerator::initFromYaml(const std::string &yaml_file)
   input_irL = configuration["input_irL"] ? configuration["input_irL"].as<std::string>() : "/maps/frames-RosarioV2-row2/infraRight(1)/infra1_1703261894400734901.png";
   input_csv = configuration["input_csv"] ? configuration["input_csv"].as<std::string>() : "/maps/frames-RosarioV2-row2/utm_jpg_final.csv";
   input_timestamp_rgb = configuration["input_timestamp_rgb"] ? configuration["input_timestamp_rgb"].as<std::string>() : "1703261894400792837";
+
+  roi_width = configuration["roi_width"] ? configuration["roi_width"].as<std::double_t>() : 0.2;
+  roi_height = configuration["roi_height"] ? configuration["roi_height"].as<std::double_t>() : 0.2;
+}
+
+cv::Mat transformPoint(cv::Mat R, double X, double Y, double Z){
+  if(R.cols == 3)
+    return R * (cv::Mat_<double>(3, 1) << X, Y, Z);
+  else
+    return R * (cv::Mat_<double>(4, 1) << X, Y, Z, 0.0);
+}
+
+cv::Mat transformPoint(cv::Mat R, cv::Mat P){
+  // 
+  if(R.cols == 3)
+    return R * (cv::Mat_<double>(3, 1) <<  P.at<double>(0,0),P.at<double>(1,0),P.at<double>(2,0));
+  else
+    return R * (cv::Mat_<double>(4, 1) <<  P.at<double>(0,0),P.at<double>(1,0),P.at<double>(2,0),0.0);
 }
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr
@@ -181,10 +174,10 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
   int height = rgb_img.rows;
 
   auto cloud = std::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
-  cloud->width = static_cast<uint32_t>(width);
-  cloud->height = static_cast<uint32_t>(height);
-  cloud->is_dense = false;
-  cloud->points.resize(width * height);
+  // cloud->width = static_cast<uint32_t>(width);
+  // cloud->height = static_cast<uint32_t>(height);
+  // cloud->is_dense = true;
+  // cloud->points.resize(width * height);
 
   const bool has_rgb_size = rgb_img.size() == irL.size();
 
@@ -195,18 +188,10 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
   RT_camera_world.at<double>(3, 3) = 1.0;
 
 
-  std::cout << "RGB Intrinsics: fx=" << intrinsics_rgb.fx << ", fy=" << intrinsics_rgb.fy << ", cx=" << intrinsics_rgb.cx << ", cy=" << intrinsics_rgb.cy << "\n";
-  std::cout << "MaxDepth=" << max_depth_ << " m, MinDepth=" << min_depth_ << " m\n";
-  if (!irR.empty() && irR.size() == irL.size())
-  {
-    
-    std::cout << "IR1 Intrinsics: fx=" << intrinsics_ir1.fx << ", fy=" << intrinsics_ir1.fy << ", cx=" << intrinsics_ir1.cx << ", cy=" << intrinsics_ir1.cy << "\n";
-    std::cout << "IR2 Intrinsics: fx=" << intrinsics_ir2.fx << ", fy=" << intrinsics_ir2.fy << ", cx=" << intrinsics_ir2.cx << ", cy=" << intrinsics_ir2.cy << "\n";
-    std::cout << "IR baseline: " << baseline_m_ << " m\n";
-
-    // Stereo matching on IR pair.
+  // Stereo matching on IR pair.
     int numDisparities = ((width / 8) + 15) & -16;
     int blockSize = 7;
+    std::cout << "NumDisparities: "<< numDisparities << std::endl;
     cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(0, numDisparities, blockSize);
     sgbm->setP1(8 * blockSize * blockSize);
     sgbm->setP2(32 * blockSize * blockSize);
@@ -215,40 +200,53 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
     cv::Mat disp16s, disp;
     sgbm->compute(irL, irR, disp16s);
     disp16s.convertTo(disp, CV_32F, 1.0 / 16.0);
-    // disp.normalize(0, 255, cv::NORM_MINMAX, CV_8U);
-    // cv::Mat depth_map = intrinsics_ir2.fx * baseline_m_ / disp; // Depth map in meters
-    // cv::imwrite(getPackagePath() + "/params/output/clouds/" + input_timestamp_rgb + "_depth_map.png", depth_map);
+
+    cv::Mat points3D;
+    cv::reprojectImageTo3D(disp,points3D, Q, true);
+
+    cv::Mat depth_map = irL_calib.getIntrinsics().fx * baseline_m_ / disp; // Depth map in meters
+    std::cout << "Cols: "<< depth_map.cols << " Rows:" << depth_map.rows << " first elem " << depth_map.at<int>(0,0) << std::endl;
+
+
+
+    cv::imwrite(getPackagePath() + "/params/output/clouds/" + input_timestamp_rgb + "_depth_map.png", depth_map);
     // Reconstruct depth in the left IR camera frame using the left IR intrinsics
     // and the baseline between the two IR cameras.
-    for (int y = 0; y < height; ++y)
-    {
-      for (int x = 0; x < width; ++x)
+    for (int y = 0; y < points3D.rows; ++y)
+      for (int x = 0; x < points3D.cols; ++x)
       {        
         const float d = disp.at<float>(y, x);
-        pcl::PointXYZRGB &pt = cloud->at(x, y);
-        if (d > 0.0f ) //&& x >= static_cast<int>(width * 0.2) && x < static_cast<int>(width * 0.8)
-        {
-          const double Z = intrinsics_ir2.fx * baseline_m_ / d;
+        pcl::PointXYZRGB pt;
+        if (d > 0.0f && x >= static_cast<int>(width * roi_width) && x < static_cast<int>(width * (1- roi_width)) 
+            && y >= static_cast<int>(height * roi_height) && y < static_cast<int>(height * (1- roi_height))){
+          cv::Vec3f P_rect = points3D.at<cv::Vec3f>(y, x);      
+          const double Z = P_rect[2];
           if (Z > min_depth_ && Z < max_depth_)
           {
-            // std::cout << "Disparity at (" << x << ", " << y << "): " << d << ", Depth: " << Z << "\n";
-            const double X = (x - intrinsics_ir2.cx) * Z / intrinsics_ir2.fx;
-            const double Y = (y - intrinsics_ir2.cy) * Z / intrinsics_ir2.fy;
-            cv::Mat_<double> pt_ir2 = (cv::Mat_<double>(4, 1) << X, Y, Z,0.0);
+            
+            const double X = P_rect[0];
+            const double Y = P_rect[1];
+            // Transformamos la nube de puntos generada por imagenes rectificadas al sistema de coordenadas original
+            cv::Mat pt_ir2 = transformPoint(R1.t(), X, Y, Z);
+            
+            // 3. Transformar el punto 3D del sistema IR2 al sistema RGB rectificado.
+            // P_rgb_rect = R_rgb_rect * R_ir2_rgb * pt_ir2
 
-            // 3. Transformar el punto 3D del sistema IR2 al sistema RGB
-            // P_rgb = R * P_ir2 + T
-            cv::Mat pt_rgb_mat = T_ir2_rgb * pt_ir2;          
+            cv::Mat pt_rgb_mat = transformPoint(R3.t() ,transformPoint(T_ir2_rgb, pt_ir2));
+            
+            
+            cv::Mat real_pt_rgb_mat =transformPoint(RT_camera_world, pt_rgb_mat);
+            real_pt_rgb_mat = transformPoint(transformationMatrix, real_pt_rgb_mat);
             
             const double pt_x = pt_rgb_mat.at<double>(0, 0);
             const double pt_y = pt_rgb_mat.at<double>(1, 0);
             const double pt_z = pt_rgb_mat.at<double>(2, 0);
             
-            const int rgb_x = static_cast<int>(std::round((intrinsics_rgb.fx * pt_x / pt_z) + intrinsics_rgb.cx));
-            const int rgb_y = static_cast<int>(std::round((intrinsics_rgb.fy * pt_y / pt_z) + intrinsics_rgb.cy));
+            const int rgb_x = static_cast<int>(std::round((rgb_calib.getIntrinsics().fx * pt_x / pt_z) + rgb_calib.getIntrinsics().cx));
+            const int rgb_y = static_cast<int>(std::round((rgb_calib.getIntrinsics().fy * pt_y / pt_z) + rgb_calib.getIntrinsics().cy));
             if (rgb_x >= 0 && rgb_x < width && rgb_y >= 0 && rgb_y < height)
             {
-              cv::Mat real_pt_rgb_mat = RT_camera_world * pt_rgb_mat;              
+              
               pt.x = static_cast<float>(real_pt_rgb_mat.at<double>(0, 0));
               pt.y = static_cast<float>(real_pt_rgb_mat.at<double>(1, 0));
               pt.z = static_cast<float>(real_pt_rgb_mat.at<double>(2, 0));
@@ -257,54 +255,14 @@ DensePointCloudGenerator::generate(const cv::Mat &rgb, const cv::Mat &ir_left, c
               pt.r = color[2];
               pt.g = color[1];
               pt.b = color[0];
+              cloud->push_back(pt);
               continue;
             }
           }
         }
-        pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
-        pt.r = pt.g = pt.b = 0;
+        // pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
+        // pt.r = pt.g = pt.b = 0;
       }
-    }    
-  }
-  // else
-  // {
-  //   // Single IR image heuristic. Use IR1 intrinsics when available, otherwise
-  //   // fall back to RGB intrinsics.
-  //   const double ir_fx = (K_ir1.empty() ? rgb_fx : K_ir1.at<double>(0, 0));
-  //   const double ir_fy = (K_ir1.empty() ? rgb_fy : K_ir1.at<double>(1, 1));
-  //   const double ir_cx = (K_ir1.empty() ? rgb_cx : K_ir1.at<double>(0, 2));
-  //   const double ir_cy = (K_ir1.empty() ? rgb_cy : K_ir1.at<double>(1, 2));
-  //   std::cout << "Single IR Intrinsics: fx=" << ir_fx << ", fy=" << ir_fy << ", cx=" << ir_cx << ", cy=" << ir_cy << "\n";
-
-  //   cv::Mat irf;
-  //   irL.convertTo(irf, CV_32F, 1.0 / 255.0);
-  //   for (int y = 0; y < height; ++y)
-  //   {
-  //     for (int x = 0; x < width; ++x)
-  //     {
-  //       const float intensity = irf.at<float>(y, x);
-  //       const float Z = (1.0f - intensity) * max_depth_;
-  //       pcl::PointXYZRGB &pt = cloud->at(x, y);
-  //       if (Z > 0.0f && Z < max_depth_)
-  //       {
-  //         const double X = (x - ir_cx) * Z / ir_fx;
-  //         const double Y = (y - ir_cy) * Z / ir_fy;
-  //         pt.x = static_cast<float>(X);
-  //         pt.y = static_cast<float>(Y);
-  //         pt.z = static_cast<float>(Z);
-  //         cv::Vec3b color = rgb_img.at<cv::Vec3b>(y, x);
-  //         pt.r = color[2];
-  //         pt.g = color[1];
-  //         pt.b = color[0];
-  //       }
-  //       else
-  //       {
-  //         pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
-  //         pt.r = pt.g = pt.b = 0;
-  //       }
-  //     }
-  //   }
-  // }
   
   return cloud;
 }

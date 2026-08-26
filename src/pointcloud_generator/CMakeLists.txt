@@ -1,5 +1,6 @@
 add_library(pointcloud_generator_lib SHARED
   DensePointCloudGenerator.cpp
+  CameraCalibration.cpp
 )
 
 target_include_directories(pointcloud_generator_lib PRIVATE ${OpenCV_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
