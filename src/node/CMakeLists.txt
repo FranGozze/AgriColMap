@@ -21,3 +21,6 @@ target_link_libraries(visualization_node_ground_truth pointcloud_aligner_lib yam
 
 add_executable(one_frame_node one_frame_node.cpp)
 target_link_libraries(one_frame_node pointcloud_generator_lib pointcloud_aligner_lib yaml-cpp visualizer_lib zmq nlohmann_json::nlohmann_json)
+
+add_executable(multi_registration_node multi_registration_node.cpp)
+target_link_libraries(multi_registration_node pointcloud_aligner_lib yaml-cpp visualizer_lib zmq nlohmann_json::nlohmann_json)
