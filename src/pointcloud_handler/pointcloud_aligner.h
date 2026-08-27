@@ -77,7 +77,7 @@ class PointCloudAligner : public PointCloudHandler{
         Matrix3 _R;
         Vector3 _t;
 
-        vector<Vector3> fix_pts, mov_pts;
+        // vector<Vector3> fix_pts, mov_pts;
         
         // Matching Mode        
 };
