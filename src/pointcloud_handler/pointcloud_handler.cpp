@@ -1,6 +1,6 @@
 #include "pointcloud_handler.h"
-
-bool contains(PCLXYZRGB_unMap map, const std::string &cloud_name){
+template <typename T>
+bool contains(std::unordered_map<std::string, T> map, const std::string &cloud_name){
     return map.find(cloud_name) != map.end();
 }
 
@@ -141,6 +141,10 @@ void PointCloudHandler::initFromYaml(const std::string& yaml_file){
         _saveRegisteredClouds = configuration["aligner_params"]["save_registered_clouds"].as<bool>();
     if (configuration["aligner_params"]["save_affine_transform"])
         _saveAffineTransform = configuration["aligner_params"]["save_affine_transform"].as<bool>();
+    if(configuration["aligner_params"]["fixed_map_size"]){
+        vector<int> size_vector = configuration["aligner_params"]["fixed_map_size"].as<std::vector<int>>();
+        _size = cv::Size(size_vector[0],size_vector[1]);
+    }
     
 }
 
@@ -278,15 +282,15 @@ void PointCloudHandler::loadMovingCloudFromDisk(const std::string &cloud_name,
                                                 const std::string &offset_path){
 
     loadCloud(cloud_name, cloud_path, cloud_key, offset_path);
-    planeNormalization(cloud_key);
+    // planeNormalization(cloud_key);
 
-    // Normalized along X and Y axis the Fixed Cloud
-    Vector3d diff_t( initGuessTMap[cloud_key] - initGuessTMap[fixed_cloud_key] );
-    _initTfMap.emplace(cloud_key, boost::shared_ptr<Transform>(new Transform(Transform::Identity())) );
-    _initTfMap[cloud_key]->translation() << diff_t.cast<float>();
+    // // Normalized along X and Y axis the Fixed Cloud
+    // Vector3d diff_t( initGuessTMap[cloud_key] - initGuessTMap[fixed_cloud_key] );
+    // _initTfMap.emplace(cloud_key, boost::shared_ptr<Transform>(new Transform(Transform::Identity())) );
+    // _initTfMap[cloud_key]->translation() << diff_t.cast<float>();
 
-    cerr << FBLU("InitMovScale Set to: ") << scale.transpose() << "\n";
-    scalePointCloud( scale, cloud_key, "rgb");
+    // cerr << FBLU("InitMovScale Set to: ") << scale.transpose() << "\n";
+    // scalePointCloud( scale, cloud_key, "rgb");
 
     string ground_truth_tf_path = _package_path + "/params/output/" + cloud_path + "_AffineGroundTruth.txt";
         ifstream mov_fixed_pcl( ground_truth_tf_path ); bool groundTruth = false;

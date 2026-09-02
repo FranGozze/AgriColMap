@@ -44,15 +44,17 @@ void PointCloudAligner::computeEnvironmentalModels(const string& mov_cloud_key, 
 
     // std:cout << "s value: " << _s << "\n";
     ERMap.emplace( mov_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(mov_cloud_key) ) );
-    ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], _s );
+    ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], _s, Vector2(0.f, 0.f), 0.01, _size );
     ERMap[mov_cloud_key]->computeMMGridMap();
-
+//  ERMap.find(fix_cloud_key) != ERMap.end()
     if(ERMap.find(fix_cloud_key) != ERMap.end()){
         cerr << FRED("Has already been has enviromental models computed. Removing it before doing it again") << "\n";
         ERMap.erase(fix_cloud_key);
+        if(!(ERMap.find(fix_cloud_key) != ERMap.end()))
+            cerr << FRED("Has been removed") << "\n";
     }
     ERMap.emplace( fix_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(fix_cloud_key) ) );
-    ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], _s, _initTfMap[mov_cloud_key]->translation().head(2) );
+    ERMap[fix_cloud_key]->loadFromPCLcloud( pclMap[fix_cloud_key], _s, _initTfMap[mov_cloud_key]->translation().head(2),0.01, _size );
     ERMap[fix_cloud_key]->computeMMGridMap();
 
     return;
@@ -94,8 +96,7 @@ void PointCloudAligner::addNoise(const std::string& cloud_key, const float& scal
     Vector2 vS = Eigen::Rotation2Df( CircleSamplingAngle )*v;
     vS(0) *= scaleMag + (.025*scaleMag - ( static_cast <float> (rand()) / static_cast <float> (RAND_MAX) ) * (.05 * scaleMag ));
     vS(1) *= scaleMag + (.025*scaleMag - ( static_cast <float> (rand()) / static_cast <float> (RAND_MAX) ) * (.05 * scaleMag ));
-    _scaleNoise += vS;
-
+    _scaleNoise(vS);
     cerr << FBLU(" Scale Noise: ") << vS.transpose() << FBLU(" Scale Norm: ") << vS.norm() << "\n";
 }
 
@@ -108,7 +109,7 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
 
     std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
 
-    cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg();
+    cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg(); //.clone()
     cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
     cv::circle(rgb1, center2, 10, cv::Scalar(255, 255, 255), -1);
     cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg();
@@ -137,7 +138,6 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
 
     if( _storeDenseOptFlw )
         WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
-
     cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
 
     cerr << "Total correspondences: " << matches.height() << " Outliers: " << matches.height() - filteredMatches.height() <<
@@ -150,7 +150,7 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
     }
 
     if( _showDOFCorrespondences )
-        showDOFCorrespondeces(len, cloud1_name, cloud2_name, size);
+        showDOFCorrespondeces(len, cloud1_name, cloud2_name, _size);
 
     computeAndApplyDOFTransform(cloud1_name, cloud2_name, len);
     downsamplePCL(cloud1_name);

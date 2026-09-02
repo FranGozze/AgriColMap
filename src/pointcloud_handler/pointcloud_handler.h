@@ -93,7 +93,7 @@ class PointCloudHandler{
             }
         }
 
-
+        Vector2 inline getScale(){return _init_mov_scale;}
     protected:
 
         void downsamplePCL(const std::string& cloud_name,
@@ -119,6 +119,7 @@ class PointCloudHandler{
         bool _saveRegisteredClouds = false;
         bool _saveAffineTransform = true;
         float _s = 0.02;
+        cv::Size _size= cv::Size(1300,1300);
 
         
         // Algorithm Variables
@@ -140,5 +141,6 @@ class PointCloudHandler{
         Vector2 _init_mov_scale;
 
         int matchingMode = 0;
+
 
 };
