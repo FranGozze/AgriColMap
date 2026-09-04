@@ -329,7 +329,6 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
     for (int i = 0; i < nLevels; i++){
         cloud_ratio = i * (1/_pydRatio);
         if (featureMode == 0){
-            std::cout << "extracting features using DAISY" << std::endl;
             imDaisy(i, _img1Features, cloud_ratio);
             imDaisy(i, _img2Features, cloud_ratio);
         }
