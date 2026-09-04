@@ -21,10 +21,12 @@ CPM::CPM()
     _checkThreshold = 3;
     _borderWidth = 5;
 
-    _im1_exg = NULL;
-    _im1_elev = NULL;
-    _im2_exg = NULL;
-    _im2_elev = NULL;
+    _img1Features._im_exg = NULL;
+    _img1Features._im_elev = NULL;
+    _img1Features._im_soil = NULL;
+    _img2Features._im_exg = NULL;
+    _img2Features._im_elev = NULL;
+    _img2Features._im_soil = NULL;
     _pydSeedsFlow = NULL;
     _pydSeedsFlow2 = NULL;
 
@@ -33,24 +35,29 @@ CPM::CPM()
 
 CPM::~CPM()
 {
-    if (_im1_exg)
-        delete[] _im1_exg;
-    if(_im1_elev)
-        delete[] _im1_elev;
-    if (_im2_exg)
-        delete[] _im2_exg;
-    if(_im2_elev)
-        delete[] _im2_elev;
+    if (_img1Features._im_exg)
+        delete[] _img1Features._im_exg;
+    if(_img1Features._im_elev)
+        delete[] _img1Features._im_elev;
+    if(_img1Features._im_soil)
+        delete[] _img1Features._im_soil;
+    if (_img2Features._im_exg)
+        delete[] _img2Features._im_exg;
+    if(_img2Features._im_elev)
+        delete[] _img2Features._im_elev;
+    if(_img2Features._im_soil)
+        delete[] _img2Features._im_soil;
     if (_pydSeedsFlow)
         delete[] _pydSeedsFlow;
     if (_pydSeedsFlow2)
         delete[] _pydSeedsFlow2;
 }
 
-void CPM::SetMatchingWeights(float vis_weight, float geom_weight){
+void CPM::SetMatchingWeights(float vis_weight, float geom_weight, float soil_weight){
 
     _vis_weight = vis_weight;
     _geom_weight = geom_weight;
+    _soil_weight = soil_weight;
 }
 
 // draw each match as a 3x3 color block
@@ -92,13 +99,14 @@ void CPM::SetStep(int step)
     _step = step;
 }
 
-void CPM::SetParams(int step, bool useVisualFeatures, bool useGeometricFeatures)
+void CPM::SetParams(int step, bool useVisualFeatures, bool useGeometricFeatures, bool useSoilFeatures)
 {
     _useVisFeats = useVisualFeatures;
     _useGeomFeats = useGeometricFeatures;
+    _useSoilFeats = useSoilFeatures;
     _step = step;
 
-    if( !_useVisFeats && !_useGeomFeats){
+    if( !_useVisFeats && !_useGeomFeats && !_useSoilFeats){
         std::cerr << "no type of feature has been set";
         std::exit(1);
     }
@@ -270,7 +278,7 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
 }
 
 
-int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Cloud, FImage& outMatches, int featureMode)    
+int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img2, FImage& img2Cloud, FImage& img2Soil, FImage& outMatches, int featureMode)    
 {
 
     if( !_useVisFeats && !_useGeomFeats){
@@ -283,42 +291,53 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
     int w = img1.width();
     int h = img1.height();
 
-    _pyd1.ConstructPyramid(img1, _pydRatio, 75);
-    _pyd2.ConstructPyramid(img2, _pydRatio, 75);
+    _img1Features._pyd.ConstructPyramid(img1, _pydRatio, 75);
+    _img2Features._pyd.ConstructPyramid(img2, _pydRatio, 75);
 
-    _pyd1_cloud.ConstructPyramid(img1Cloud, _pydRatio, 75);
-    _pyd2_cloud.ConstructPyramid(img2Cloud, _pydRatio, 75);
+    _img1Features._pyd_cloud.ConstructPyramid(img1Cloud, _pydRatio, 75);
+    _img2Features._pyd_cloud.ConstructPyramid(img2Cloud, _pydRatio, 75);
 
-    int nLevels = _pyd1.nlevels();
+    _img1Features._pyd_soil.ConstructPyramid(img1Soil, _pydRatio, 75);
+    _img2Features._pyd_soil.ConstructPyramid(img2Soil, _pydRatio, 75);
 
-    if (_im1_exg)
-        delete[] _im1_exg;
-    if (_im1_elev)
-        delete[] _im1_elev;
-    if (_im2_exg)
-        delete[] _im2_exg;
-    if (_im2_elev)
-        delete[] _im2_elev;
+    int nLevels = _img1Features._pyd.nlevels();
 
-    _im1_exg = new UCImage[nLevels];
-    _im1_elev = new UCImage[nLevels];
-    _im2_exg = new UCImage[nLevels];
-    _im2_elev = new UCImage[nLevels];
+    if (_img1Features._im_exg)
+        delete[] _img1Features._im_exg;
+    if (_img1Features._im_elev)
+        delete[] _img1Features._im_elev;
+    if (_img2Features._im_exg)
+        delete[] _img2Features._im_exg;
+    if (_img2Features._im_elev)
+        delete[] _img2Features._im_elev;
+    if (_img1Features._im_soil)
+        delete[] _img1Features._im_soil;
+    if (_img2Features._im_soil)
+        delete[] _img2Features._im_soil;
 
+
+    _img1Features._im_exg = new UCImage[nLevels];
+    _img1Features._im_elev = new UCImage[nLevels];
+    _img1Features._im_soil = new UCImage[nLevels];
+    _img2Features._im_exg = new UCImage[nLevels];
+    _img2Features._im_elev = new UCImage[nLevels];
+    _img2Features._im_soil = new UCImage[nLevels];
     float cloud_ratio = 0.f;
     for (int i = 0; i < nLevels; i++){
         cloud_ratio = i * (1/_pydRatio);
         if (featureMode == 0){
-            imDaisy(_pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]);
-            imDaisy(_pyd2[i], _pyd2_cloud[i], cloud_ratio, _im2_exg[i], _im2_elev[i]);
+            std::cout << "extracting features using DAISY" << std::endl;
+            imDaisy(i, _img1Features, cloud_ratio);
+            imDaisy(i, _img2Features, cloud_ratio);
         }
         else{
-            pythonClient.extract(_pyd1[i], _pyd1_cloud[i], cloud_ratio, featureMode,_im1_exg[i], _im1_elev[i]);
-            pythonClient.extract(_pyd2[i], _pyd2_cloud[i], cloud_ratio, featureMode,_im2_exg[i], _im2_elev[i]);
+            pythonClient.extract(_img1Features._pyd[i], _img1Features._pyd_cloud[i], cloud_ratio, featureMode,_img1Features._im_exg[i], _img1Features._im_elev[i]);
+            pythonClient.extract(_img2Features._pyd[i], _img2Features._pyd_cloud[i], cloud_ratio, featureMode,_img2Features._im_exg[i], _img2Features._im_elev[i]);
         }
         // 		ImageFeature::imSIFT(_pyd1[i], _im1f[i], 2, 1, true, 8);
         // 		ImageFeature::imSIFT(_pyd2[i], _im2f[i], 2, 1, true, 8);
     }
+    std::cout << "after extracting features using DAISY" << std::endl;
     //std::exit(1);
     t.toc("get feature: ");
 
@@ -336,6 +355,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
         delete[] _pydSeedsFlow2;
     _pydSeedsFlow = new FImage[nLevels];
     _pydSeedsFlow2 = new FImage[nLevels];
+    
     for (int i = 0; i < nLevels; i++){
         _pydSeedsFlow[i].allocate(2, numV);
         _pydSeedsFlow2[i].allocate(2, numV2);
@@ -384,9 +404,9 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
     //t.toc("generate seeds: ");
 
     t.tic();
-    OnePass(_pyd1, _pyd2, _im1_exg, _im1_elev, _im2_exg, _im2_elev, _seeds, _neighbors, _pydSeedsFlow);
+    OnePass(_img1Features, _img2Features, _seeds, _neighbors, _pydSeedsFlow);
     t.toc("forward matching: ");
-    OnePass(_pyd2, _pyd1, _im2_exg, _im2_elev, _im1_exg, _im1_elev, _seeds2, _neighbors2, _pydSeedsFlow2);
+    OnePass(_img2Features, _img1Features, _seeds2, _neighbors2, _pydSeedsFlow2);
     t.toc("backward matching: ");
 
     // cross check
@@ -479,44 +499,138 @@ void CPM::NormalsAndFPFHEstimation(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pc
 
     return;
 }
+// FImage& img, FImage& imgCloud, const float& cloud_ratio, UCImage& outFtImg_Exg, UCImage& outFtImg_Elev
+// _pyd1[i], _pyd1_cloud[i], cloud_ratio, _im1_exg[i], _im1_elev[i]
 
-void CPM::imDaisy(FImage& img, FImage& imgCloud, const float& cloud_ratio, UCImage& outFtImg_Exg, UCImage& outFtImg_Elev)
+cv::Mat extractGaborFeatures(const cv::Mat& gray, 
+                             const std::vector<double>& sigmas, 
+                             int num_orientations, 
+                             const std::vector<double>& lambdas) 
 {
+    // Ensure the input image is in floating-point format
+    cv::Mat gray_f;
+    if (gray.type() != CV_32F) {
+        gray.convertTo(gray_f, CV_32F);
+    } else {
+        gray_f = gray;
+    }
 
+    std::vector<cv::Mat> features;
+
+    // 1. Loop through all parameter combinations
+    for (double sigma : sigmas) {
+        for (int i = 0; i < num_orientations; ++i) {
+            // Replicates np.linspace(0, np.pi, num_orientations, endpoint=False)
+            double theta = (i * CV_PI) / num_orientations;
+
+            for (double lambd : lambdas) {
+                // Generate the Gabor kernel
+                cv::Mat kernel = cv::getGaborKernel(
+                    cv::Size(21, 21), 
+                    sigma, 
+                    theta, 
+                    lambd, 
+                    0.5, // gamma
+                    0.0, // psi
+                    CV_32F
+                );
+
+                // Apply the filter
+                cv::Mat response;
+                cv::filter2D(gray_f, response, CV_32F, kernel);
+                
+                features.push_back(response);
+            }
+        }
+    }
+    // 2. Stack features along the channel axis (axis=2 in Python)
+    cv::Mat feat;
+    cv::merge(features, feat);
+    // 3. Compute L2 norm across channels: sqrt(sum(x_i^2))
+    cv::Mat feat_sq, sum_sq, norm;
+    cv::multiply(feat, feat, feat_sq);      // Element-wise square
+    cv::transform(feat_sq, sum_sq, cv::Mat::ones(1, feat.channels(), CV_32F)); // Sum across channels
+    cv::sqrt(sum_sq, norm);                 // Square root
+    // 4. Normalize: feat /= (norm + 1e-8)
+    // Add epsilon to prevent division by zero
+    norm += 1e-8f; 
+
+    // Divide each channel by the norm matrix
+    std::vector<cv::Mat> feat_channels;
+    cv::split(feat, feat_channels);
+    for (auto& channel : feat_channels) {
+        channel /= norm;
+    }
+    cv::merge(feat_channels, feat);
+    return feat; // Returns a CV_32FC(N) matrix, where N = total filter combinations
+}
+
+void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
+{
+    
+    FImage img = imgF._pyd[level];
+    FImage imgSoil = imgF._pyd_soil[level];
+    FImage imgCloud = imgF._pyd_cloud[level];
     int w = img.width();
     int h = img.height();
     int channels = img.nchannels();
     int channels_cloud = imgCloud.nchannels();
-
     cv::Mat cvImg_Exg(h, w, CV_8UC1);
+    cv::Mat cvImg_Soil(h, w, CV_8UC1);
     cv::Mat cvImg_Elev(h, w, CV_32FC3);
     for (int i = 0; i < h; i++){
         for (int j = 0; j < w; j++){
                 cvImg_Exg.at<unsigned char>(i, j) = img[ (i*w + j) * channels ] * 255;
+                cvImg_Soil.at<unsigned char>(i, j) = imgSoil[ (i*w + j) * channels ] * 255;
                 cvImg_Elev.at<cv::Vec3f>(i, j) = cv::Vec3f( imgCloud[ (i*w + j)*channels_cloud ], imgCloud[ (i*w + j)*channels_cloud + 1 ], imgCloud[ (i*w + j)*channels_cloud + 2 ]); //0;//img[ (i*w + j) * channels + 1 ] * 255;
         }
     }
-
-    outFtImg_Exg.allocate(w, h, 104);
-    outFtImg_Elev.allocate(w, h, 33);
-
+    
+    imgF._im_exg[level].allocate(w, h, 104);
+    imgF._im_soil[level].allocate(w, h, 104);
+    imgF._im_elev[level].allocate(w, h, 33);
+    
     if( _useVisFeats ){
         cv::Ptr<cv::xfeatures2d::DAISY> daisy =	cv::xfeatures2d::DAISY::create(5, 3, 4, 8, cv::xfeatures2d::DAISY::NRM_FULL, cv::noArray(), false, false);
-        cv::Mat outFeatures_Exg;
+        cv::Mat outFeatures_Exg;            
         daisy->compute(cvImg_Exg, outFeatures_Exg);
         // std::cout << "W x H x C: " << w << " x " << h << " x " << channels << std::endl;
         // std::cout << "Computed features for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << std::endl;
 
         int itSize = outFeatures_Exg.cols;
+        // std::cout << "Feature size for Exg: " << itSize << std::endl;
+        // std::cout << "Feature matrix size for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << " x " << outFeatures_Exg.channels() << std::endl;
         //outFtImg_Exg.allocate(w, h, itSize);
         for (int i = 0; i < h; i++){
             for (int j = 0; j < w; j++){
                 int idx = i*w + j;
                 for (int k = 0; k < itSize; k++){
-                    outFtImg_Exg.pData[idx*itSize + k] = outFeatures_Exg.at<float>(idx, k) * 255;
+                    imgF._im_exg[level].pData[idx*itSize + k] = outFeatures_Exg.at<float>(idx, k) * 255;
                 }
             }
         }
+    }
+    
+    if( _useSoilFeats ){
+
+        // cv::Mat outFeatures_Soil=  extractGaborFeatures(cvImg_Soil, {2.0,4.0,8.0,12.0}, 13, {4.0,8.0});
+        cv::Ptr<cv::xfeatures2d::DAISY> daisy =	cv::xfeatures2d::DAISY::create(5, 3, 4, 8, cv::xfeatures2d::DAISY::NRM_FULL, cv::noArray(), false, false);
+        cv::Mat outFeatures_Soil;            
+        daisy->compute(cvImg_Soil, outFeatures_Soil);
+        
+        int itSize = outFeatures_Soil.cols;
+        // int itSize = outFeatures_Soil.channels();
+        //outFtImg_Soil.allocate(w, h, itSize);
+        for (int i = 0; i < h; i++){
+            for (int j = 0; j < w; j++){
+                int idx = i*w + j;
+                for (int k = 0; k < itSize; k++){
+                    imgF._im_soil[level].pData[idx*itSize + k] = outFeatures_Soil.at<float>(idx, k) * 255;
+                    // imgF._im_soil[level].pData[idx*itSize + k] = outFeatures_Soil.at<cv::Vec<float, 104>>(i, j)[k] * 255;
+                }
+            }
+        }
+        
     }
 
     if( _useGeomFeats ) {
@@ -549,11 +663,11 @@ void CPM::imDaisy(FImage& img, FImage& imgCloud, const float& cloud_ratio, UCIma
                 int idx = i*w + j;
                 if( cloudIndexes.at<unsigned char>(i, j) == 1 ){
                     for (int k = 0; k < fpfhSize; k++)
-                        outFtImg_Elev.pData[idx*fpfhSize + k] = (unsigned char)round(fpfh->points[counter].histogram[k]*255);
+                        imgF._im_elev[level].pData[idx*fpfhSize + k] = (unsigned char)round(fpfh->points[counter].histogram[k]*255);
                     counter++;
                 } else if( cloudIndexes.at<unsigned char>(i, j) == 0 ) {
                     for (int k = 0; k < fpfhSize; k++)
-                        outFtImg_Elev.pData[idx*fpfhSize + k] = 0;
+                        imgF._im_elev[level].pData[idx*fpfhSize + k] = 0;
                 }
             }
         }
@@ -595,15 +709,15 @@ void CPM::CrossCheck(IntImage& seeds, FImage& seedsFlow, FImage& seedsFlow2, Int
 
     }
 }
-
-float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev, int x1, int y1, int x2, int y2)
+// FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev
+float CPM::MatchCost(ImageFeatures &imgF1, ImageFeatures &imgF2, int level, int x1, int y1, int x2, int y2)
 {
     //std::cerr << "inizio";
-    int w = im1_exg->width();
-    int h = im1_exg->height();
-    int ch = im1_exg->nchannels();
-    int chCloud = im1_elev->nchannels();
-    float totalDiffExg, totalDiffElev;
+    int w = imgF1._im_exg[level].width();
+    int h = imgF1._im_exg[level].height();
+    int ch = imgF1._im_exg[level].nchannels();
+    int chCloud = imgF1._im_elev[level].nchannels();
+    float totalDiffExg, totalDiffElev, totalDiffSoil;
 
     // fast
     x1 = ImageProcessing::EnforceRange(x1, w);
@@ -615,18 +729,24 @@ float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_
     unsigned char* p2;
     unsigned char* p1e;
     unsigned char* p2e;
+    unsigned char* p1s;
+    unsigned char* p2s;
 
-    p1 = im1_exg->pixPtr(y1, x1);
-    p2 = im2_exg->pixPtr(y2, x2);
-    p1e = im1_elev->pixPtr(y1, x1);
-    p2e = im2_elev->pixPtr(y2,x2);
+    p1 = imgF1._im_exg[level].pixPtr(y1, x1);
+    p2 = imgF2._im_exg[level].pixPtr(y2, x2);
+    p1e = imgF1._im_elev[level].pixPtr(y1, x1);
+    p2e = imgF2._im_elev[level].pixPtr(y2, x2);
+    p1s = imgF1._im_soil[level].pixPtr(y1, x1);
+    p2s = imgF2._im_soil[level].pixPtr(y2, x2);
 
     totalDiffExg = 0;
     totalDiffElev = 0;
+    totalDiffSoil = 0;
 
 
 
 #ifdef WITH_SSE
+    std::cerr << "WITH_SSE"<< std::endl;
     // SSE2
     unsigned char *_p1 = p1, *_p2 = p2;
     hu_m128 r1, r2, r3;
@@ -658,29 +778,33 @@ float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_
         //std::cerr << "totalDiffElev";
         for (int idx = 0; idx < chCloud; idx++)
             totalDiffElev += abs(p1e[idx] - p2e[idx]);
+        for (int idx = 0; idx < ch; idx++)
+            totalDiffSoil += abs(p1s[idx] - p2s[idx]);
 
 #endif
-    //std::cerr << _useVisFeats << " " << _useGeomFeats << " " << _vis_weight << " " << _geom_weight << "fine \n";
-    return totalDiffExg + .5 * totalDiffElev;
+    // std::cerr << _useVisFeats << " " << _useGeomFeats << " " << _vis_weight << " " << _geom_weight << " soil_weight: " << _soil_weight << "totalSoil " <<  _soil_weight * totalDiffSoil<< " fine \n";
+    return _vis_weight * totalDiffExg + _geom_weight * totalDiffElev + _soil_weight * totalDiffSoil;
 
 }
-
-int CPM::Propogate(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, UCImage* pyd1_elev, UCImage* pyd2_exg, UCImage* pyd2_elev, int level, float* radius, int iterCnt, IntImage* pydSeeds, IntImage& neighbors, FImage* pydSeedsFlow, float* bestCosts)
+// FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, UCImage* pyd1_elev, UCImage* pyd2_exg, UCImage* pyd2_elev
+int CPM::Propogate(ImageFeatures &imgF1, ImageFeatures &imgF2, int level, float* radius, int iterCnt, IntImage* pydSeeds, IntImage& neighbors, FImage* pydSeedsFlow, float* bestCosts)
 {
-    int nLevels = pyd1.nlevels();
-    float ratio = pyd1.ratio();
+    int nLevels = imgF1._pyd.nlevels();
+    float ratio = imgF1._pyd.ratio();
 
-    FImage im1 = pyd1[level];
-    FImage im2 = pyd2[level];
-    UCImage* im1_exg = pyd1_exg + level;
-    UCImage* im2_exg = pyd2_exg + level;
-    UCImage* im1_elev = pyd1_elev + level;
-    UCImage* im2_elev = pyd2_elev + level;
+    // FImage im1 = imgF1._pyd[level];
+    // FImage im2 = imgF2._pyd[level];
+    // UCImage* im1_exg = imgF1._im_exg + level;
+    // UCImage* im2_exg = imgF2._im_exg + level;
+    // UCImage* im1_soil = imgF1._im_soil + level;
+    // UCImage* im2_soil = imgF2._im_soil + level;
+    // UCImage* im1_elev = imgF1._im_elev + level;
+    // UCImage* im2_elev = imgF2._im_elev + level;
     IntImage* seeds = pydSeeds + level;
     FImage* seedsFlow = pydSeedsFlow + level;
 
-    int w = im1.width();
-    int h = im1.height();
+    int w = imgF1._pyd[level].width();
+    int h = imgF1._pyd[level].height();
     int ptNum = seeds->height();
 
     int maxNb = neighbors.width();
@@ -692,7 +816,7 @@ int CPM::Propogate(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, 
         int y = seeds->pData[2 * i + 1];
         float u = seedsFlow->pData[2 * i];
         float v = seedsFlow->pData[2 * i + 1];
-        bestCosts[i] = MatchCost(im1, im2, im1_exg, im1_elev, im2_exg, im2_elev, x, y, x + u, y + v);
+        bestCosts[i] = MatchCost(imgF1, imgF2, level, x, y, x + u, y + v);
     }
 
     int iter = 0;
@@ -731,7 +855,7 @@ int CPM::Propogate(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, 
                 if (abs(tu - cu) < 1e-6 && abs(tv - cv) < 1e-6){
                     continue;
                 }
-                float tc = MatchCost(im1, im2, im1_exg, im1_elev, im2_exg, im2_elev, x, y, x + tu, y + tv);
+                float tc = MatchCost(imgF1, imgF2, level, x, y, x + tu, y + tv);
                 if (tc < bestCosts[idx]){
                     bestCosts[idx] = tc;
                     seedsFlow->pData[2 * idx] = tu;
@@ -757,7 +881,7 @@ int CPM::Propogate(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, 
                     continue;
                 }
 
-                float tc = MatchCost(im1, im2, im1_exg, im1_elev, im2_exg, im2_elev, x, y, x + tu, y + tv);
+                float tc = MatchCost(imgF1, imgF2, level, x, y, x + tu, y + tv);
                 if (tc < bestCosts[idx]){
                     bestCosts[idx] = tc;
                     seedsFlow->pData[2 * idx] = tu;
@@ -788,13 +912,13 @@ int CPM::Propogate(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, 
     return iter;
 }
 
-void CPM::PyramidRandomSearch(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev, IntImage* pydSeeds, IntImage& neighbors, FImage* pydSeedsFlow)
+void CPM::PyramidRandomSearch(ImageFeatures &imgF1, ImageFeatures &imgF2, IntImage* pydSeeds, IntImage& neighbors, FImage* pydSeedsFlow)
 {
-    int nLevels = pyd1.nlevels();
-    float ratio = pyd1.ratio();
+    int nLevels = imgF1._pyd.nlevels();
+    float ratio = imgF1._pyd.ratio();
 
-    FImage rawImg1 = pyd1[0];
-    FImage rawImg2 = pyd2[0];
+    FImage rawImg1 = imgF1._pyd[0];
+    FImage rawImg2 = imgF2._pyd[0];
     srand(0);
 
     int w = rawImg1.width();
@@ -826,7 +950,7 @@ void CPM::PyramidRandomSearch(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage*
     }
 
     for (int l = nLevels - 1; l >= 0; l--){ // coarse-to-fine
-        int iCnt = Propogate(pyd1, pyd2, im1_exg, im1_elev, im2_exg, im2_elev, l, searchRadius, iterCnts[l], pydSeeds, neighbors, pydSeedsFlow, bestCosts);
+        int iCnt = Propogate(imgF1, imgF2, l, searchRadius, iterCnts[l], pydSeeds, neighbors, pydSeedsFlow, bestCosts);
         if (l > 0){
             UpdateSearchRadius(neighbors, pydSeedsFlow, l, searchRadius);
 
@@ -846,29 +970,29 @@ void CPM::PyramidRandomSearch(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage*
     delete[] bestCosts;
     delete[] iterCnts;
 }
-
-void CPM::OnePass(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev, IntImage& seeds, IntImage& neighbors, FImage* pydSeedsFlow)
+// FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev
+void CPM::OnePass(ImageFeatures &imgF1, ImageFeatures &imgF2, IntImage& seeds, IntImage& neighbors, FImage* pydSeedsFlow)
 {
-    FImage rawImg1 = pyd1[0];
-    FImage rawImg2 = pyd2[0];
+    FImage rawImg1 = imgF1._pyd[0];
+    FImage rawImg2 = imgF2._pyd[0];
 
-    int nLevels = pyd1.nlevels();
-    float ratio = pyd1.ratio();
+    int nLevels = imgF1._pyd.nlevels();
+    float ratio = imgF1._pyd.ratio();
 
     int numV = seeds.height();
 
     IntImage* pydSeeds = new IntImage[nLevels];
     for (int i = 0; i < nLevels; i++){
         pydSeeds[i].allocate(2, numV);
-        int sw = pyd1[i].width();
-        int sh = pyd1[i].height();
+        int sw = imgF1._pyd[i].width();
+        int sh = imgF1._pyd[i].height();
         for (int n = 0; n < numV; n++){
             pydSeeds[i][2 * n] = ImageProcessing::EnforceRange(seeds[2 * n] * pow(ratio, i), sw);
             pydSeeds[i][2 * n + 1] = ImageProcessing::EnforceRange(seeds[2 * n + 1] * pow(ratio, i), sh);
         }
     }
 
-    PyramidRandomSearch(pyd1, pyd2, im1_exg, im1_elev, im2_exg, im2_elev, pydSeeds, neighbors, pydSeedsFlow);
+    PyramidRandomSearch(imgF1, imgF2, pydSeeds, neighbors, pydSeedsFlow);
 
     // scale
     int b = _borderWidth;

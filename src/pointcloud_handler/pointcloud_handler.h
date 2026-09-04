@@ -110,15 +110,17 @@ class PointCloudHandler{
         int _max_iter_num = 1;
         bool _verbosity = false;
         int _dense_optical_flow_step = 5;
-        float _downsampling_rate = 0.15;
-        float _search_radius = 0.15;
+        float _downsampling_rate = 0.15f;
+        float _search_radius = 0.15f;
         bool _useVisualFeatures = true;
         bool _useGeometricFeatures = true;
-        float _vis_feat_weight, _geom_feat_weight;
+        bool _useSoilFeatures = true;
+
+        float _vis_feat_weight=1.0f, _geom_feat_weight=0.5f, _soil_feat_weight=0.5f;
         bool _cloudVisualizationEnabled = false;
         bool _saveRegisteredClouds = false;
         bool _saveAffineTransform = true;
-        float _s = 0.02;
+        float _s = 0.02f;
         cv::Size _size= cv::Size(1300,1300);
 
         

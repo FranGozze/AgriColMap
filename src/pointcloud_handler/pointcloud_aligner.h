@@ -68,7 +68,7 @@ class PointCloudAligner : public PointCloudHandler{
                              const std::string& cloud2_name);
         void getMatches(const std::string& cloud1_name, const std::string& cloud2_name);
 
-        FImage img1, img1Cloud, img2, img2Cloud, matches, filteredMatches;
+        FImage img1, img1Cloud, img1Soil, img2, img2Cloud, img2Soil, matches, filteredMatches;
 
         // Dense Optical Flow Estimation
         CPM cpm;
