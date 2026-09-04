@@ -104,10 +104,26 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
 {   
     img1.imcopy( ERMap[cloud1_name]->getExgImg() );
     img2.imcopy( ERMap[cloud2_name]->getExgImg() );
+    
     img1Cloud.imcopy( ERMap[cloud1_name]->getXyzImg() );
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
+    
+    img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg() );
+    img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg() );
+    
+    cv::Size draw_img_size( _size.width*2, _size.height );
+    cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(0) );
+    ERMap[cloud1_name]->getSoilImg().copyTo( drawImg( cv::Rect(0, 0, _size.width, _size.height) )  );
+    ERMap[cloud2_name]->getSoilImg().copyTo( drawImg( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
+    cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255), -1);
+    cv::Mat drawImgRes;
+    cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_soil.png",drawImgRes);
+    // cv::imshow("matches", drawImgRes);
+    // cv::waitKey(0);
+    // cv::destroyWindow("matches");
 
-    std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
+    // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
 
     cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg(); //.clone()
     cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
@@ -122,19 +138,17 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
     std::cout << "Matching Mode: " << getFeatureString() << "\n";
 
-    cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches, matchingMode);    
+    cpm.Matching(img1, img1Cloud, img1Soil, img2, img2Cloud, img2Soil, matches, matchingMode);    
 }
 
 void PointCloudAligner::Match( const std::string& cloud1_name, const std::string& cloud2_name,
                                const Eigen::Vector2f& scale, const string& iter_num, const cv::Size& size){
 
-    cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight);
-    cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures);
+    cpm.SetMatchingWeights(_vis_feat_weight, _geom_feat_weight, _soil_feat_weight);
+    cpm.SetParams(_dense_optical_flow_step, _useVisualFeatures, _useGeometricFeatures, _useSoilFeatures);
     matches.clear();
     filteredMatches.clear();
-    getMatches(cloud1_name, cloud2_name);
-                                    
-    // cpm.Matching(img1, img1Cloud, img2, img2Cloud, matches);
+    getMatches(cloud1_name, cloud2_name);    
 
     if( _storeDenseOptFlw )
         WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);

@@ -131,6 +131,7 @@ void PointCloudHandler::initFromYaml(const std::string& yaml_file){
     _vis_feat_weight = configuration["aligner_params"]["visual_features_weight"].as<float>();
     _useGeometricFeatures = configuration["aligner_params"]["use_geometric_features"].as<bool>();
     _geom_feat_weight = configuration["aligner_params"]["geometric_features_weight"].as<float>();
+    
     if(configuration["aligner_params"]["matching_mode"])
         matchingMode = configuration["aligner_params"]["matching_mode"].as<int>();
     if(configuration["aligner_params"]["cloud_visualization_enabled"])
@@ -145,6 +146,10 @@ void PointCloudHandler::initFromYaml(const std::string& yaml_file){
         vector<int> size_vector = configuration["aligner_params"]["fixed_map_size"].as<std::vector<int>>();
         _size = cv::Size(size_vector[0],size_vector[1]);
     }
+    if(configuration["aligner_params"]["use_soil_features"])
+        _useSoilFeatures = configuration["aligner_params"]["use_soil_features"].as<bool>();
+    if(configuration["aligner_params"]["soil_features_weight"])
+        _soil_feat_weight = configuration["aligner_params"]["soil_features_weight"].as<float>();
     
 }
 
@@ -212,12 +217,12 @@ void PointCloudHandler::ExGFilterPCL(const string &cloud_key, const Vector3i& cl
     PCLPointCloudXYZRGB::Ptr soil_filtered( new PCLPointCloudXYZRGB() );
 
     for(PCLptXYZRGB pt : pclMap[cloud_key]->points){
-        if( (float) computeExGforXYZRGBPoint(pt) > 30){
+        if(computeExGforXYZRGBPoint(pt) > 15){
             pt.r = cloud_color(0); pt.g = cloud_color(1); pt.b = cloud_color(2);
             data_filtered->points.push_back(pt);
         }
         else 
-        if( (float) computeExGforXYZRGBPoint(pt) < 15){
+        if( (float) computeExGforXYZRGBPoint(pt) < 0){
             soil_filtered->points.push_back(pt);
         }
     }

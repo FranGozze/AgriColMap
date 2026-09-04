@@ -101,7 +101,8 @@ void EnvironmentRepresentation::computeMMGridMap(){
     xyzImg = cv::Mat( cv::Size(_height, _width), CV_32FC3, cv::Scalar(0,0,0) );
     exgImgColor = cv::Mat( cv::Size(_height, _width), CV_8UC3, cv::Scalar(0,0,0) );
     rgbImg = cv::Mat( cv::Size(_height, _width), CV_8UC3, cv::Scalar(0,0,0) );
-
+    soilImg = cv::Mat( cv::Size(_height, _width), CV_8UC1, cv::Scalar(0) );
+    int max = 0;
     int iter = 0;
     for(unsigned int r = 0; r < _height; ++r){
         for(unsigned int c = 0; c < _width; ++c, ++iter){
@@ -109,9 +110,12 @@ void EnvironmentRepresentation::computeMMGridMap(){
             if( pt.getVector3fMap().norm() <= 1e-3 )
                 continue;
             int ExG = computeExGforXYZRGBPoint(pt);
-            exgImg.at<uchar>(c,r) = ExG;
-            exgImgColor.at<cv::Vec3b>(c,r)[1] = ExG;
-            elevImg.at<uchar>(c,r) = altitude_scale * ( pt.z - minPt.z );
+            max = std::max(max, ExG);
+            exgImg.at<uchar>(c,r) = static_cast<uchar>(std::max(0, std::min(255, ExG)));
+            soilImg.at<uchar>(c,r) = static_cast<uchar>(std::abs(std::min(0, std::max(-255, 5 * ExG))));
+            // soilImg.at<uchar>(c,r) = (ExG <= 20 && ExG > 0) ? ExG * 10 : 0;
+            exgImgColor.at<cv::Vec3b>(c,r)[1] = static_cast<uchar>(ExG);
+            elevImg.at<uchar>(c,r) = static_cast<uchar>(altitude_scale * ( pt.z - minPt.z ));
             xyzImg.at<cv::Vec3f>(c,r)[0] = pt.x;
             xyzImg.at<cv::Vec3f>(c,r)[1] = pt.y;
             xyzImg.at<cv::Vec3f>(c,r)[2] = pt.z;
@@ -120,7 +124,7 @@ void EnvironmentRepresentation::computeMMGridMap(){
             rgbImg.at<cv::Vec3b>(c,r)[2] = pt.r;
         }
     }
-
+    std::cout << "Max ExG: " << max << "\n";
     cv::normalize(xyzImg, xyzImgUChar, 255, 0, cv::NORM_MINMAX);
     xyzImgUChar.convertTo(xyzImgUChar, CV_8UC3);
 }

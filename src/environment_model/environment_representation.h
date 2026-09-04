@@ -25,6 +25,7 @@ class EnvironmentRepresentation{
         inline cv::Mat getXyzImg(){ return xyzImg; };
         inline cv::Mat getelevImg(){ return xyzImg; };
         inline cv::Mat getExgImg(){ return exgImg; };
+        inline cv::Mat getSoilImg(){ return soilImg; };
 
         inline float getXCoord(){ return x_coord; }
         inline float getYCoord(){ return y_coord; }
@@ -40,6 +41,6 @@ class EnvironmentRepresentation{
         int _width, _height = 0;
         PCLptXYZRGB minPt, maxPt;
         float _square_size, x_coord, y_coord;
-        cv::Mat exgImg, elevImg, xyzImg, xyzImgUChar, exgImgColor, rgbImg;
+        cv::Mat exgImg, elevImg, xyzImg, xyzImgUChar, exgImgColor, rgbImg, soilImg;
         int altitude_scale;
 };
