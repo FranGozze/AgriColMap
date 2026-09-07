@@ -1,7 +1,7 @@
 from pathlib import Path
 import numpy as np
 from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics, print_metrics_latex
-
+import csv
 import argparse
 
 debug = False
@@ -65,6 +65,34 @@ def calculate_errors(curr_file, s_gt5, s_init5, Aff_gt5, t_gt5):
 
     return transl_err, angle_err, scale_err
 
+def add_to_grouped_data(grouped_data, method, scale_noise_magnitude, transl_noise_magnitude, yaw_noise_magnitude, transl_err, angle_err, scale_err):
+    global overrule_validation
+    if scale_noise_magnitude not in grouped_data:
+        grouped_data[scale_noise_magnitude] = {}
+    if transl_noise_magnitude not in grouped_data[scale_noise_magnitude]:
+        grouped_data[scale_noise_magnitude][transl_noise_magnitude] = {}
+    if yaw_noise_magnitude not in grouped_data[scale_noise_magnitude][transl_noise_magnitude]:
+        grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude] = {}
+    if method not in grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude]:
+        grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method] = {
+                "transl_err": [],
+                "angle_err": [],
+                "scale_err": [],
+                "count": 0
+            }
+    grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["count"] += 1
+    if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
+        # if True:
+            grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["transl_err"].append(abs(transl_err))
+            grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["angle_err"].append(abs(angle_err))
+            grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["scale_err"].append(abs(scale_err))
+    # else:            
+    #     # print("Aff:", Aff)            
+    #     # print("Aff_gt5:", Aff_gt5)
+    #     fail_reasons = f" transl_err: {transl_err}" if abs(transl_err) > 0.05 else ""
+    #     fail_reasons += f" angle_err: {angle_err}" if abs(angle_err) > 0.1 else ""
+    #     fail_reasons += f" scale_err: {scale_err}" if abs(scale_err) > 2.5 else ""
+    #     printDebugInfo(f"Failed registration case: {file_name} ({fail_reasons})")
 def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=None, scale_noise_filter=None, yaw_noise_filter=None, method_filter=None):
     row5_data = np.loadtxt(gt_path)
     # file_list = parse_text_list(results_folder)
@@ -79,7 +107,7 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
     counter = 0
     succ_number = 0
 
-    grouped_by = {}
+    grouped_data = {}
     global overrule_validation
 
 
@@ -116,45 +144,21 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
 
         curr_file = np.loadtxt(current_path)
         transl_err, angle_err, scale_err = calculate_errors(curr_file, s_gt5, s_init5, Aff_gt5, t_gt5)
-        if scale_noise_magnitude not in grouped_by:
-            grouped_by[scale_noise_magnitude] = {}
-        if transl_noise_magnitude not in grouped_by[scale_noise_magnitude]:
-            grouped_by[scale_noise_magnitude][transl_noise_magnitude] = {}
-        if yaw_noise_magnitude not in grouped_by[scale_noise_magnitude][transl_noise_magnitude]:
-            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude] = {}
-        if method not in grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude]:
-            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method] = {
-                "transl_err": [],
-                "angle_err": [],
-                "scale_err": [],
-                "count": 0
-            }
+        add_to_grouped_data(grouped_data, method, scale_noise_magnitude, transl_noise_magnitude, yaw_noise_magnitude, transl_err, angle_err, scale_err)
         if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
         # if True:
             succ_number += 1
-            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["transl_err"].append(abs(transl_err))
-            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["angle_err"].append(abs(angle_err))
-            grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["scale_err"].append(abs(scale_err))
-        else:            
-            # print("Aff:", Aff)            
-            # print("Aff_gt5:", Aff_gt5)
-            fail_reasons = f" transl_err: {transl_err}" if abs(transl_err) > 0.05 else ""
-            fail_reasons += f" angle_err: {angle_err}" if abs(angle_err) > 0.1 else ""
-            fail_reasons += f" scale_err: {scale_err}" if abs(scale_err) > 2.5 else ""
-            printDebugInfo(f"Failed registration case: {file_name} ({fail_reasons})")
-        grouped_by[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["count"] += 1
         counter += 1
-
     print(f"Processed: {counter}")
     if succ_number > 0:
         if latex:
-            print_metrics_latex(rowNumber, grouped_by)
+            print_metrics_latex(rowNumber, grouped_data)
         else:
-            print_metrics(rowNumber,grouped_by)
+            print_metrics(rowNumber,grouped_data)
         print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")
-        # print(f"Max transl err: {max([max(grouped_by[scale][transl][yaw][method]['transl_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
-        # print(f"Max angle err: {max([max(grouped_by[scale][transl][yaw][method]['angle_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
-        # print(f"Max scale err: {max([max(grouped_by[scale][transl][yaw][method]['scale_err']) for scale in grouped_by for transl in grouped_by[scale] for yaw in grouped_by[scale][transl] for method in grouped_by[scale][transl][yaw]])}")
+        # print(f"Max transl err: {max([max(grouped_data[scale][transl][yaw][method]['transl_err']) for scale in grouped_data for transl in grouped_data[scale] for yaw in grouped_data[scale][transl] for method in grouped_data[scale][transl][yaw]])}")
+        # print(f"Max angle err: {max([max(grouped_data[scale][transl][yaw][method]['angle_err']) for scale in grouped_data for transl in grouped_data[scale] for yaw in grouped_data[scale][transl] for method in grouped_data[scale][transl][yaw]])}")
+        # print(f"Max scale err: {max([max(grouped_data[scale][transl][yaw][method]['scale_err']) for scale in grouped_data for transl in grouped_data[scale] for yaw in grouped_data[scale][transl] for method in grouped_data[scale][transl][yaw]])}")
     else:
         print("No valid cases processed.")
 
@@ -164,6 +168,36 @@ def process_file(curr_file, gt_file):
     curr_file = np.loadtxt(curr_file)
     transl_err, angle_err, scale_err = calculate_errors(curr_file, s_gt5, s_init5, Aff_gt5, t_gt5)
     print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {(scale_err*100):.4f} % ") 
+
+def process_compact_file(curr_file, gt_file):
+    row5_data = np.loadtxt(gt_file)
+    s_gt5, s_init5, Aff_gt5, t_gt5 = extract_from_gt_file(row5_data)
+
+    existing_data = []
+    with open(curr_file, newline="", encoding="utf-8") as file:
+        first_line = file.readline()
+        file.seek(0)
+        if first_line.startswith("{'method':"):
+            print(f"Legacy format detected in {curr_file}. Reading as literal_eval.")
+            existing_data = [ast.literal_eval(line) for line in file if line.strip()]
+        else:
+            print(f"CSV format detected in {curr_file}. Reading as CSV.")
+            existing_data = list(csv.DictReader(file))
+    grouped_data = {}
+    succ_number = 0
+    counter = len(existing_data)
+    for row in existing_data:
+        content = row["content"][1:-1]  # Remove parentheses
+        content = [float(x.strip()) for x in content.split(",")]
+        transl_err, angle_err, scale_err = calculate_errors(content, s_gt5, s_init5, Aff_gt5, t_gt5)
+        add_to_grouped_data(grouped_data, row["method"], row["scale_noise_magnitude"], row["transl_noise_magnitude"], row["yaw_noise_magnitude"], transl_err, angle_err, scale_err)
+        if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
+            succ_number += 1
+    print(f"Processed: {counter}")
+    if succ_number > 0:
+        print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")        
+    else:
+        print("No valid cases processed.")
 
 def main():
 
@@ -182,6 +216,7 @@ def main():
     parser.add_argument('-d', '--debug', action="store_true", help='enable debug output')
     parser.add_argument('-l','--latex', action="store_true", help='output results in LaTeX table format')
     parser.add_argument('--overrule_validation', action="store_true", help='overrule validation and consider all cases as successful')
+    parser.add_argument('--compact_file', default=None, help='path to compact results file to process (overrides --results)')
 
     args = parser.parse_args()
     global latex
@@ -192,6 +227,10 @@ def main():
     overrule_validation = args.overrule_validation
 
     root = Path(__file__).resolve().parent
+    if args.compact_file is not None:
+        curr_file = root / args.compact_file
+        process_compact_file(curr_file, args.gt)
+
     if args.complete:
         for x in [3,4,5]:
             gt_file = f"20180524-mavic-ugv-soybean-eschikon-row{x}_AffineGroundTruth.txt"
