@@ -138,6 +138,7 @@ def compress_results(input_dir, output_csv, add=False):
         writer = csv.DictWriter(file, fieldnames=headers)
         writer.writeheader()
         writer.writerows(rows)
+        print(f"Compressed results written to {output_path}. Total entries: {len(rows)}")
 
     
 

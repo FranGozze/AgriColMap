@@ -109,6 +109,7 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
 
     grouped_data = {}
     global overrule_validation
+    global latex
 
 
 
@@ -169,41 +170,60 @@ def process_file(curr_file, gt_file):
     transl_err, angle_err, scale_err = calculate_errors(curr_file, s_gt5, s_init5, Aff_gt5, t_gt5)
     print(f"transl_err: {transl_err:.4f}, angle_err: {angle_err}, scale_err: {(scale_err*100):.4f} % ") 
 
-def process_compact_file(curr_file, gt_file):
+def process_compact_file(curr_file, gt_file, transl_noise_filter=None, scale_noise_filter=None, yaw_noise_filter=None, method_filter=None):
+    global overrule_validation
+    global latex
     row5_data = np.loadtxt(gt_file)
     s_gt5, s_init5, Aff_gt5, t_gt5 = extract_from_gt_file(row5_data)
+    rowNumber = gt_file.split(".")[0][-1]  # Extract row number from GT file name
 
     existing_data = []
-    with open(curr_file, newline="", encoding="utf-8") as file:
-        first_line = file.readline()
-        file.seek(0)
-        if first_line.startswith("{'method':"):
-            print(f"Legacy format detected in {curr_file}. Reading as literal_eval.")
-            existing_data = [ast.literal_eval(line) for line in file if line.strip()]
+    try:
+        with open(curr_file, newline="", encoding="utf-8") as file:
+            first_line = file.readline()
+            file.seek(0)
+            if first_line.startswith("{'method':"):
+                print(f"Legacy format detected in {curr_file}. Reading as literal_eval.")
+                existing_data = [ast.literal_eval(line) for line in file if line.strip()]
+            else:
+                print(f"CSV format detected in {curr_file}. Reading as CSV.")
+                existing_data = list(csv.DictReader(file))
+        grouped_data = {}
+        succ_number = 0
+        counter = len(existing_data)
+        for row in existing_data:
+            if transl_noise_filter is not None and float(row["transl_noise_magnitude"]) != float(transl_noise_filter):                
+                continue
+            if scale_noise_filter is not None and float(row["scale_noise_magnitude"]) != float(scale_noise_filter):                
+                continue
+
+            if yaw_noise_filter is not None and float(row["yaw_noise_magnitude"]) != float(yaw_noise_filter):                
+                continue            
+            if method_filter is not None and row["method"] != method_filter:
+                continue
+            content = row["content"][1:-1]  # Remove parentheses
+            content = [float(x.strip()) for x in content.split(",")]
+            transl_err, angle_err, scale_err = calculate_errors(content, s_gt5, s_init5, Aff_gt5, t_gt5)
+            add_to_grouped_data(grouped_data, row["method"], row["scale_noise_magnitude"], row["transl_noise_magnitude"], row["yaw_noise_magnitude"], transl_err, angle_err, scale_err)
+            if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
+                succ_number += 1
+        print(f"Processed: {counter}")
+        if succ_number > 0:
+            if latex:
+                print_metrics_latex(rowNumber, grouped_data)
+            else:
+                print_metrics(rowNumber,grouped_data)
+            print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")        
         else:
-            print(f"CSV format detected in {curr_file}. Reading as CSV.")
-            existing_data = list(csv.DictReader(file))
-    grouped_data = {}
-    succ_number = 0
-    counter = len(existing_data)
-    for row in existing_data:
-        content = row["content"][1:-1]  # Remove parentheses
-        content = [float(x.strip()) for x in content.split(",")]
-        transl_err, angle_err, scale_err = calculate_errors(content, s_gt5, s_init5, Aff_gt5, t_gt5)
-        add_to_grouped_data(grouped_data, row["method"], row["scale_noise_magnitude"], row["transl_noise_magnitude"], row["yaw_noise_magnitude"], transl_err, angle_err, scale_err)
-        if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
-            succ_number += 1
-    print(f"Processed: {counter}")
-    if succ_number > 0:
-        print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")        
-    else:
-        print("No valid cases processed.")
+            print("No valid cases processed.")
+    except FileNotFoundError:
+        print(f"File {curr_file} not found. Skipping compact file processing.")
 
 def main():
 
     parser = argparse.ArgumentParser(description='Computes registration success rate and error metrics from affine result files.')    
     parser.add_argument('--gt',  default="20180524-mavic-ugv-soybean-eschikon-row3_AffineGroundTruth.txt", help='Ground truth file')
-    parser.add_argument('--results',  default="20180524-mavic-ugv-soybean-eschikon-row3", help='Folder containing result files to process')
+    parser.add_argument('--results',  default=None, help='Folder containing result files to process')
     parser.add_argument('-f', '--file',  default=None, help='specific result file to process (overrides --results)')
     parser.add_argument('-c', '--complete', action="store_true", help="show all the soybean rows")
     parser.add_argument('-o', '--output', help='name of output file plot')
@@ -217,7 +237,7 @@ def main():
     parser.add_argument('-l','--latex', action="store_true", help='output results in LaTeX table format')
     parser.add_argument('--overrule_validation', action="store_true", help='overrule validation and consider all cases as successful')
     parser.add_argument('--compact_file', default=None, help='path to compact results file to process (overrides --results)')
-
+    parser.add_argument('-cc','--complete_compacted', action="store_true", help="show all the soybean rows")
     args = parser.parse_args()
     global latex
     latex = args.latex
@@ -227,29 +247,34 @@ def main():
     overrule_validation = args.overrule_validation
 
     root = Path(__file__).resolve().parent
-    if args.compact_file is not None:
+    if args.complete_compacted:
+        for x in [3,4,5]:
+                gt_file = f"20180524-mavic-ugv-soybean-eschikon-row{x}_AffineGroundTruth.txt"
+                curr_file = root / f"20180524-mavic-ugv-soybean-eschikon-row{x}.csv"
+                print(f"\nProcessing row {x}...")
+                process_compact_file(curr_file, gt_file, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)    
+    elif args.compact_file is not None:        
         curr_file = root / args.compact_file
-        process_compact_file(curr_file, args.gt)
-
-    if args.complete:
+        process_compact_file(curr_file, args.gt, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)
+    elif args.complete:
         for x in [3,4,5]:
             gt_file = f"20180524-mavic-ugv-soybean-eschikon-row{x}_AffineGroundTruth.txt"
             results_folder = root / f"20180524-mavic-ugv-soybean-eschikon-row{x}"
             print(f"\nProcessing row {x}...")
             process_folder(gt_file, results_folder, rowNumber=x, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)
-    else:
-        if args.file:
-            curr_file = root / args.file
-            process_file(curr_file, args.gt)
-        else:
-            rowNumber = args.gt.split("_")[0][-1]  # Extract row number from GT file name
-            gt_path = root / args.gt
-            results_folder = root / args.results
-            print(f"Processing GT: {gt_path} with results from folder: {results_folder}...")
-            process_folder(gt_path, results_folder, rowNumber=rowNumber, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)
+    elif args.file is not None:
+        curr_file = root / args.file
+        process_file(curr_file, args.gt)
+    elif args.results is not None:
+        rowNumber = args.gt.split("_")[0][-1]  # Extract row number from GT file name
+        gt_path = root / args.gt
+        results_folder = root / args.results
+        print(f"Processing GT: {gt_path} with results from folder: {results_folder}...")
+        process_folder(gt_path, results_folder, rowNumber=rowNumber, transl_noise_filter=args.filter_transl_noise, scale_noise_filter=args.filter_scale_noise, yaw_noise_filter=args.filter_yaw_noise, method_filter=args.filter_method)
         # row5_path = root / "20180524-mavic-ugv-soybean-eschikon-row5_AffineGroundTruth.txt"
         # list_path = root / "file_list.txt"
-
+    else:
+        print("No valid arguments provided. Please specify either --file, --results, or --compact_file.")
     
 
 
