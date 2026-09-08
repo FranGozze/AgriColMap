@@ -111,28 +111,28 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg() );
     img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg() );
     
-    cv::Size draw_img_size( _size.width*2, _size.height );
-    cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(0) );
-    ERMap[cloud1_name]->getSoilImg().copyTo( drawImg( cv::Rect(0, 0, _size.width, _size.height) )  );
-    ERMap[cloud2_name]->getSoilImg().copyTo( drawImg( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
-    cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255), -1);
-    cv::Mat drawImgRes;
-    cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_soil.png",drawImgRes);
+    // cv::Size draw_img_size( _size.width*2, _size.height );
+    // cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(0) );
+    // ERMap[cloud1_name]->getSoilImg().copyTo( drawImg( cv::Rect(0, 0, _size.width, _size.height) )  );
+    // ERMap[cloud2_name]->getSoilImg().copyTo( drawImg( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
+    // cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255), -1);
+    // cv::Mat drawImgRes;
+    // cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
+    // cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_soil.png",drawImgRes);
     // cv::imshow("matches", drawImgRes);
     // cv::waitKey(0);
     // cv::destroyWindow("matches");
 
     // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
 
-    cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg(); //.clone()
-    cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
-    cv::circle(rgb1, center2, 10, cv::Scalar(255, 255, 255), -1);
-    cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg();
-    cv::Point2f center3( rgb2.cols/2.0, rgb2.rows/2.0 );
-    cv::circle(rgb2, center3, 10, cv::Scalar(255, 255, 255), -1);
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_centerpoint_rgb.png",rgb1);
-    cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_rgb.png",rgb2);
+    // cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg(); //.clone()
+    // cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
+    // cv::circle(rgb1, center2, 10, cv::Scalar(255, 255, 255), -1);
+    // cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg();
+    // cv::Point2f center3( rgb2.cols/2.0, rgb2.rows/2.0 );
+    // cv::circle(rgb2, center3, 10, cv::Scalar(255, 255, 255), -1);
+    // cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_centerpoint_rgb.png",rgb1);
+    // cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_rgb.png",rgb2);
 
     
     // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
