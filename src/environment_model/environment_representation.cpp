@@ -110,7 +110,9 @@ void EnvironmentRepresentation::computeMMGridMap(){
                 continue;
             int ExG = computeExGforXYZRGBPoint(pt);
             exgImg.at<uchar>(c,r) = static_cast<uchar>(std::max(0, std::min(255, ExG)));
-            soilImg.at<uchar>(c,r) = static_cast<uchar>(std::abs(std::min(0, std::max(-255, 5 * ExG))));
+            soilImg.at<uchar>(c,r) = 
+                // (ExG < 0) ? 255 : 0;
+                static_cast<uchar>(std::abs(std::min(0, std::max(-255, 10 * ExG))));
             // soilImg.at<uchar>(c,r) = (ExG <= 20 && ExG > 0) ? ExG * 10 : 0;
             exgImgColor.at<cv::Vec3b>(c,r)[1] = static_cast<uchar>(ExG);
             elevImg.at<uchar>(c,r) = static_cast<uchar>(altitude_scale * ( pt.z - minPt.z ));

@@ -281,7 +281,7 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
 int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img2, FImage& img2Cloud, FImage& img2Soil, FImage& outMatches, int featureMode)    
 {
 
-    if( !_useVisFeats && !_useGeomFeats){
+    if( !_useVisFeats && !_useGeomFeats && !_useSoilFeats){
         std::cerr << "no type of feature has been set";
         std::exit(1);
     }
@@ -612,12 +612,13 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
     if( _useSoilFeats ){
 
         // cv::Mat outFeatures_Soil=  extractGaborFeatures(cvImg_Soil, {2.0,4.0,8.0,12.0}, 13, {4.0,8.0});
+        // int itSize = outFeatures_Soil.channels();
+        
         cv::Ptr<cv::xfeatures2d::DAISY> daisy =	cv::xfeatures2d::DAISY::create(5, 3, 4, 8, cv::xfeatures2d::DAISY::NRM_FULL, cv::noArray(), false, false);
         cv::Mat outFeatures_Soil;            
         daisy->compute(cvImg_Soil, outFeatures_Soil);
-        
         int itSize = outFeatures_Soil.cols;
-        // int itSize = outFeatures_Soil.channels();
+        
         //outFtImg_Soil.allocate(w, h, itSize);
         for (int i = 0; i < h; i++){
             for (int j = 0; j < w; j++){
@@ -770,12 +771,14 @@ float CPM::MatchCost(ImageFeatures &imgF1, ImageFeatures &imgF2, int level, int 
 #else
 
         //std::cerr << "totalDiffExg";
+    if( _useVisFeats )
         for (int idx = 0; idx < ch; idx++)
             totalDiffExg += abs(p1[idx] - p2[idx]);
 
-        //std::cerr << "totalDiffElev";
+    // if( _useGeomFeats ) this is comented because sometimes they are calculated on the python side.
         for (int idx = 0; idx < chCloud; idx++)
             totalDiffElev += abs(p1e[idx] - p2e[idx]);
+    if( _useSoilFeats )
         for (int idx = 0; idx < ch; idx++)
             totalDiffSoil += abs(p1s[idx] - p2s[idx]);
 
