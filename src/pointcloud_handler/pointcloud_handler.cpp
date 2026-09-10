@@ -43,7 +43,8 @@ void PointCloudHandler::loadCloud(const std::string &cloud_name, const std::stri
 }
 
 void PointCloudHandler::planeNormalization(const std::string& cloud_key){
-
+    if(_verbosity)
+        std::cerr << FBLU("Plane Normalization for: ") << cloud_key << "\n";
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
     PCLsegmentationXYZRGB seg;
@@ -157,6 +158,7 @@ void PointCloudHandler::loadFromDisk(const std::string& fixed_cloud_key, const s
 
     loadCloud(_moving_pcl, _moving_pcl_path, moving_cloud_key, _offset_file);
     loadCloud(_fixed_pcl, _fixed_pcl_path, fixed_cloud_key);
+    planeNormalization(fixed_cloud_key);
 
     string ground_truth_tf_path = _package_path + "/params/output/" + _moving_pcl_path + "_AffineGroundTruth.txt";
     ifstream mov_fixed_pcl( ground_truth_tf_path ); bool groundTruth = false;
@@ -217,7 +219,7 @@ void PointCloudHandler::ExGFilterPCL(const string &cloud_key, const Vector3i& cl
     PCLPointCloudXYZRGB::Ptr soil_filtered( new PCLPointCloudXYZRGB() );
 
     for(PCLptXYZRGB pt : pclMap[cloud_key]->points){
-        if(computeExGforXYZRGBPoint(pt) > 15){
+        if(computeExGforXYZRGBPoint(pt) > 30){
             pt.r = cloud_color(0); pt.g = cloud_color(1); pt.b = cloud_color(2);
             data_filtered->points.push_back(pt);
         }
@@ -310,6 +312,15 @@ void PointCloudHandler::loadMovingCloudFromDisk(const std::string &cloud_name,
         //     ExitWithErrorMsg("File Does Not Exist: " + ground_truth_tf_path);
         // }
 
+}
+
+void PointCloudHandler::transformToInitialGuess(const std::string& cloud_key){
+    
+    planeNormalization(cloud_key);
+    Transform init_guess_tf = Transform::Identity();
+    init_guess_tf.translation() << Vector3(_initTfMap[cloud_key]->translation()[0],_initTfMap[cloud_key]->translation()[1],0);    
+    std::cerr << FBLU("Transforming " + cloud_key + " Cloud to Initial Guess: ") << init_guess_tf.translation().transpose() << "\n";
+    pcl::transformPointCloud(*pclMap[cloud_key], *pclMap[cloud_key], init_guess_tf);
 }
 
 void PointCloudHandler::BrightnessEnhancement(const std::string& cloud_key, const int& brightness){

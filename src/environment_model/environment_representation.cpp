@@ -109,11 +109,14 @@ void EnvironmentRepresentation::computeMMGridMap(){
             if( pt.getVector3fMap().norm() <= 1e-3 )
                 continue;
             int ExG = computeExGforXYZRGBPoint(pt);
-            exgImg.at<uchar>(c,r) = static_cast<uchar>(std::max(0, std::min(255, ExG)));
+            exgImg.at<uchar>(c,r) = static_cast<uchar>(std::max(0, std::min(255,10 * ExG)));
             soilImg.at<uchar>(c,r) = 
                 // (ExG < 0) ? 255 : 0;
-                static_cast<uchar>(std::abs(std::min(0, std::max(-255, 10 * ExG))));
-            // soilImg.at<uchar>(c,r) = (ExG <= 20 && ExG > 0) ? ExG * 10 : 0;
+                static_cast<uchar>(std::abs(std::min(0, std::max(-255, ExG))));
+            
+            // soilImg.at<cv::Vec3b>(c,r)[0] = (ExG < 0) ? pt.b : 0;
+            // soilImg.at<cv::Vec3b>(c,r)[1] = (ExG < 0) ? pt.g : 0;
+            // soilImg.at<cv::Vec3b>(c,r)[2] = (ExG < 0) ? pt.r : 0;
             exgImgColor.at<cv::Vec3b>(c,r)[1] = static_cast<uchar>(ExG);
             elevImg.at<uchar>(c,r) = static_cast<uchar>(altitude_scale * ( pt.z - minPt.z ));
             xyzImg.at<cv::Vec3f>(c,r)[0] = pt.x;

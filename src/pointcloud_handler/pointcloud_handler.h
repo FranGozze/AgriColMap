@@ -94,6 +94,7 @@ class PointCloudHandler{
         }
 
         Vector2 inline getScale(){return _init_mov_scale;}
+        void transformToInitialGuess(const std::string& cloud_key);
     protected:
 
         void downsamplePCL(const std::string& cloud_name,

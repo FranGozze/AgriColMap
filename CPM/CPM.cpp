@@ -580,6 +580,7 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
         for (int j = 0; j < w; j++){
                 cvImg_Exg.at<unsigned char>(i, j) = img[ (i*w + j) * channels ] * 255;
                 cvImg_Soil.at<unsigned char>(i, j) = imgSoil[ (i*w + j) * channels ] * 255;
+                // cvImg_Soil.at<cv::Vec3b>(i, j) = cv::Vec3b( imgSoil[ (i*w + j)*channels ], imgSoil[ (i*w + j)*channels + 1 ], imgSoil[ (i*w + j)*channels + 2 ]); //0;//img[ (i*w + j) * channels + 1 ] * 255;
                 cvImg_Elev.at<cv::Vec3f>(i, j) = cv::Vec3f( imgCloud[ (i*w + j)*channels_cloud ], imgCloud[ (i*w + j)*channels_cloud + 1 ], imgCloud[ (i*w + j)*channels_cloud + 2 ]); //0;//img[ (i*w + j) * channels + 1 ] * 255;
         }
     }

@@ -64,12 +64,13 @@ int main(int argc, char **argv)
     for (int i = start; i < end + 1; i++)
     {   
         std::string number = std::to_string(i);
-        std::string cloud_name = mov_cloud + number;
+        std::string cloud_name = mov_cloud + "" + number;
         cerr << FRED("Computing " + number + " cloud \n") ;
         pclAligner.loadMovingCloudFromDisk("pointcloud_rgb"+number+"_20_imgs", "frames-RosarioV2-row"+row , cloud_name, fix_cloud, pclAligner.getScale(), "offset_rgb"+number+"_20_imgs");
         
         pclAligner.addNoise(cloud_name, scaleMag, TranslNoiseMag, YawNoiseMag);
         pclAligner.computeAndApplyInitialRelativeGuess(fix_cloud, cloud_name);
+        // pclAligner.transformToInitialGuess(cloud_name);
         pclAligner.computeExGFilteredPointCloud(cloud_name, colors[(i-1)% 6]);
         pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255, 0, 0));
         pclAligner.computeEnvironmentalModels(cloud_name, fix_cloud);
@@ -77,36 +78,6 @@ int main(int argc, char **argv)
         
     }
     
-    // // Adding Noise to Initial Guess
-    // pclAligner.loadMovingCloudFromDisk("pointcloud_rgb_23_imgs", "frames-RosarioV2-row2" , mov_cloud1, fix_cloud, Vector2(0.75f, 0.75f), "offset_rgb_23_imgs");
-    // cerr << FRED("Computing first cloud \n") ;
-    
-    // // pclAligner.addNoise(mov_cloud1, scaleMag, TranslNoiseMag, YawNoiseMag);
-    // pclAligner.computeAndApplyInitialRelativeGuess(fix_cloud, mov_cloud1);
-    // pclAligner.computeExGFilteredPointCloud(mov_cloud1, Vector3i(0, 0, 255));
-    // pclAligner.computeEnvironmentalModels(mov_cloud1, fix_cloud);
-    // pclAligner.Match(fix_cloud, mov_cloud1, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300, 1300));
-    
-    
-    // pclAligner.loadMovingCloudFromDisk("pointcloud_rgb2_20_imgs", "frames-RosarioV2-row2", mov_cloud2, fix_cloud, Vector2(0.75f, 0.75f), "offset_rgb2_20_imgs");
-    // cerr << FRED("Computing second cloud \n") ;
-    // // pclAligner.addNoise(mov_cloud2, scaleMag, TranslNoiseMag, YawNoiseMag);
-    // pclAligner.computeAndApplyInitialRelativeGuess(fix_cloud, mov_cloud2);
-    // pclAligner.computeExGFilteredPointCloud(mov_cloud2, Vector3i(0, 255, 0));
-    // // pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255, 0, 0));
-    // pclAligner.computeEnvironmentalModels(mov_cloud2, fix_cloud);
-    // pclAligner.Match(fix_cloud, mov_cloud2, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300, 1300));
-    
-
-    // pclAligner.loadMovingCloudFromDisk("pointcloud_rgb3_20_imgs", "frames-RosarioV2-row2", mov_cloud3, fix_cloud, Vector2(0.75f, 0.75f), "offset_rgb3_20_imgs");
-    // cerr << FRED("Computing third cloud \n") ;
-    // // pclAligner.addNoise(mov_cloud3, scaleMag, TranslNoiseMag, YawNoiseMag);
-    // pclAligner.computeAndApplyInitialRelativeGuess(fix_cloud, mov_cloud3);
-    // pclAligner.computeExGFilteredPointCloud(mov_cloud3, Vector3i(255, 255,0));
-    // pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255, 0, 0));
-    // pclAligner.computeEnvironmentalModels(mov_cloud3, fix_cloud);
-    // pclAligner.Match(fix_cloud, mov_cloud3, pclAligner.getInitMovScale(), ExpIDStr, cv::Size(1300, 1300));
-
 
     // if (pclAligner.saveRegisteredClouds())
     // {
@@ -134,13 +105,9 @@ int main(int argc, char **argv)
         for (int i = start; i < end + 1; i++)
         {   
             std::string number = std::to_string(i);
-            std::string cloud_name = mov_cloud + number;
+            std::string cloud_name = mov_cloud + "" + number;
             viz.showCloud(pclAligner.getFilteredPcl(cloud_name), cloud_name);
         }
-        // viz.showCloud(pclAligner.getFilteredPcl(mov_cloud2), mov_cloud2);
-        // viz.showCloud(pclAligner.getFilteredPcl(mov_cloud3), mov_cloud3);
-        // viz.showCloud( pclAligner.getPcl(fix_cloud), fix_cloud);
-        // viz.showCloud( pclAligner.getPcl(mov_cloud), mov_cloud);
         viz.spingUntilDeath();
     }
 
