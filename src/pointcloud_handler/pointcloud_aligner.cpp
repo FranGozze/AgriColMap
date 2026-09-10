@@ -12,7 +12,7 @@ void PointCloudAligner::computeAndApplyInitialRelativeGuess(const std::string& f
         if( getVerbosityLevel() )
             cerr << FBLU("Compute And Applying The Relative Initial Guess!") << "\n";
 
-        planeNormalization(fixed_cloud_key);
+        // planeNormalization(fixed_cloud_key);
         planeNormalization(moving_cloud_key);
 
         // Normalized along X and Y axis the Fixed Cloud

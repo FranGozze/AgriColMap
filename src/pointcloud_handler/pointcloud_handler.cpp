@@ -152,7 +152,7 @@ void PointCloudHandler::loadFromDisk(const std::string& fixed_cloud_key, const s
 
     loadCloud(_moving_pcl, _moving_pcl_path, moving_cloud_key, _offset_file);
     loadCloud(_fixed_pcl, _fixed_pcl_path, fixed_cloud_key);
-
+    planeNormalization(fixed_cloud_key);
     string ground_truth_tf_path = _package_path + "/params/output/" + _moving_pcl_path + "_AffineGroundTruth.txt";
     ifstream mov_fixed_pcl( ground_truth_tf_path ); bool groundTruth = false;
     if(mov_fixed_pcl) {
