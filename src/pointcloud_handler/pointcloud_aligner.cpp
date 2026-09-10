@@ -12,7 +12,7 @@ void PointCloudAligner::computeAndApplyInitialRelativeGuess(const std::string& f
         if( getVerbosityLevel() )
             cerr << FBLU("Compute And Applying The Relative Initial Guess!") << "\n";
 
-        planeNormalization(fixed_cloud_key);
+        // planeNormalization(fixed_cloud_key);
         planeNormalization(moving_cloud_key);
 
         // Normalized along X and Y axis the Fixed Cloud
@@ -111,30 +111,37 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg() );
     img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg() );
     
-    // cv::Size draw_img_size( _size.width*2, _size.height );
-    // cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(0) );
-    // ERMap[cloud1_name]->getSoilImg().copyTo( drawImg( cv::Rect(0, 0, _size.width, _size.height) )  );
-    // ERMap[cloud2_name]->getSoilImg().copyTo( drawImg( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
-    // cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255), -1);
-    // cv::Mat drawImgRes;
-    // cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
-    // cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_soil.png",drawImgRes);
+    cv::Size draw_img_size( _size.width*2, _size.height );
+    cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(0) );
+    ERMap[cloud1_name]->getSoilImg().copyTo( drawImg( cv::Rect(0, 0, _size.width, _size.height) )  );
+    ERMap[cloud2_name]->getSoilImg().copyTo( drawImg( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
+    cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255), -1);
+    cv::circle(drawImg, cv::Point2f(_size.width/2.0 + _size.width, _size.height/2.0), 10, cv::Scalar(255), -1);
+    cv::Mat drawImgRes;
+    cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_soil.png",drawImgRes);
     // cv::imshow("matches", drawImgRes);
     // cv::waitKey(0);
     // cv::destroyWindow("matches");
 
     // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
-
-    // cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg(); //.clone()
+    cv::Mat drawImg2( draw_img_size, CV_8UC3, cv::Scalar(0,0,0) );
+    ERMap[cloud1_name]->getRgbImg().copyTo( drawImg2( cv::Rect(0, 0, _size.width, _size.height) )  );
+    ERMap[cloud2_name]->getRgbImg().copyTo( drawImg2( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
+    cv::circle(drawImg2, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255,255,255), -1);
+    cv::circle(drawImg2, cv::Point2f(_size.width/2.0 + _size.width, _size.height/2.0), 10, cv::Scalar(255,255,255), -1);
+    cv::Mat drawImgRes2;
+    cv::resize(drawImg2, drawImgRes2, cv::Size( 2000, 1000 ) );
+    cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_centerpoint_rgb.png",drawImgRes2);
+    // cv::Mat rgb1 = ERMap[cloud1_name]->getRgbImg().clone(); //.clone()
     // cv::Point2f center2( rgb1.cols/2.0, rgb1.rows/2.0 );
     // cv::circle(rgb1, center2, 10, cv::Scalar(255, 255, 255), -1);
-    // cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg();
+    // cv::Mat rgb2 = ERMap[cloud2_name]->getRgbImg().clone();
     // cv::Point2f center3( rgb2.cols/2.0, rgb2.rows/2.0 );
     // cv::circle(rgb2, center3, 10, cv::Scalar(255, 255, 255), -1);
     // cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_centerpoint_rgb.png",rgb1);
     // cv::imwrite(getPackagePath() + "/imgs/" + cloud2_name + "_centerpoint_rgb.png",rgb2);
 
-    
     // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
     std::cout << "Matching Mode: " << getFeatureString() << "\n";
 
@@ -149,7 +156,7 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
     matches.clear();
     filteredMatches.clear();
     getMatches(cloud1_name, cloud2_name);    
-
+                                    
     if( _storeDenseOptFlw )
         WriteDenseOpticalFlow(img1.width(), img1.height(), cloud2_name, iter_num);
     cpm.VotingScheme(matches, filteredMatches, ERMap[cloud1_name]->getRgbImg(), ERMap[cloud2_name]->getRgbImg());
@@ -159,8 +166,10 @@ void PointCloudAligner::Match( const std::string& cloud1_name, const std::string
 
     int len = filteredMatches.height();
     if(len < 10){
-        writeAffineTransform(iter_num, cloud2_name);
-        ExitWithErrorMsg("too few correspondences");
+        // writeAffineTransform(iter_num, cloud2_name);
+        // ExitWithErrorMsg("too few correspondences");ç
+        std::cerr << FRED("Too few correspondences. Skipping this iteration") << "\n";
+        return;
     }
 
     if( _showDOFCorrespondences )
