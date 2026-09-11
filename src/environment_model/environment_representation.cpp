@@ -108,11 +108,11 @@ void EnvironmentRepresentation::computeMMGridMap(){
             PCLptXYZRGB pt = computeAveragePoint(_gridMap[iter], c, r);
             if( pt.getVector3fMap().norm() <= 1e-3 )
                 continue;
-            int ExG = computeExGforXYZRGBPoint(pt);
-            exgImg.at<uchar>(c,r) = static_cast<uchar>(std::max(0, std::min(255,10 * ExG)));
+            int ExG = computeExGforXYZRGBPoint(pt);            
+            exgImg.at<uchar>(c,r) = static_cast<uchar>(std::max(0, ExG));
             soilImg.at<uchar>(c,r) = 
                 // (ExG < 0) ? 255 : 0;
-                static_cast<uchar>(std::abs(std::min(0, std::max(-255, ExG))));
+                static_cast<uchar>(std::abs(std::min(0,  ExG)));
             
             // soilImg.at<cv::Vec3b>(c,r)[0] = (ExG < 0) ? pt.b : 0;
             // soilImg.at<cv::Vec3b>(c,r)[1] = (ExG < 0) ? pt.g : 0;
