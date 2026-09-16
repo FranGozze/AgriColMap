@@ -55,6 +55,7 @@ while True:
 
     img_exg = utils.decode_image(message["img_exg"])
     img_elev = utils.decode_image(message["img_elev"])
+    img_soil = utils.decode_image(message["img_soil"])
     cloudRatio = message["cloud_ratio"]
     id_method = message["id_method"]
     # cv2.imwrite(f"imgs/received_img_{img_counter}_exg.jpg", img_exg)
@@ -65,11 +66,12 @@ while True:
     # if id_method < 0 or id_method >= len(methods):
     #     print(f"Invalid method ID: {id_method}. Using default method (0).")
     #     id_method = 0
+    H, W = img_exg.shape[:2]
+    feat_soil = np.zeros((H,W,104), dtype=np.uint8)
     if id_method < 15:
         feat_exg = methods[id_method](img_exg)
         # print("Extracted features: ", feat_exg)
 
-        H, W = img_exg.shape[:2]
         feat_elev = np.zeros((H, W, 33), dtype=np.float32)
     elif id_method >= 15 and id_method <= 17:
         feat_exg = methods[0](img_exg)
@@ -88,21 +90,26 @@ while True:
     elif id_method == 24:
         feat_exg = methods[0](img_exg)
         feat_elev = methods[15](img_elev, cloudRatio)
-
-
+    elif id_method == 25:
+        feat_exg = methods[0](img_exg)
+        feat_elev = methods[8](img_elev)
+        feat_soil = methods[0](img_soil)
     # ---- OPTIONAL: convert to uint8 here (faster) ----
     feat_exg = np.clip(feat_exg * 255, 0, 255).astype(np.uint8)
     feat_elev = feat_elev.astype(np.uint8)
+    feat_soil = feat_soil.astype(np.uint8)
 
     H, W, C1 = feat_exg.shape
     _, _, C2 = feat_elev.shape
+    _, _, C3 = feat_soil.shape
 
-    header = struct.pack("6i", H, W, C1, H, W, C2)
+    header = struct.pack("9i", H, W, C1, H, W, C2, H, W, C3)
 
     socket.send_multipart([
         header,
         feat_exg.tobytes(),
-        feat_elev.tobytes()
+        feat_elev.tobytes(),
+        feat_soil.tobytes()
     ])
 
     # print("Processed a matching request. Features shape:", feat_exg.shape, feat_elev.shape)

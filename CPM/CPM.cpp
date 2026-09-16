@@ -324,8 +324,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
     _img2Features._im_elev = new UCImage[nLevels];
     _img2Features._im_soil = new UCImage[nLevels];
     float cloud_ratio = 0.f;
-// PythonClient is not thread safe, so we cannot parallelize this loop for now.
-// #pragma omp parallel for      
+    _featureMode = featureMode;
     for (int i = 0; i < nLevels; i++){
         cloud_ratio = i * (1/_pydRatio);
         if (featureMode == 0){
@@ -333,8 +332,8 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
             imDaisy(i, _img2Features, cloud_ratio);
         }
         else{
-            pythonClient.extract(_img1Features._pyd[i], _img1Features._pyd_cloud[i], cloud_ratio, featureMode,_img1Features._im_exg[i], _img1Features._im_elev[i]);
-            pythonClient.extract(_img2Features._pyd[i], _img2Features._pyd_cloud[i], cloud_ratio, featureMode,_img2Features._im_exg[i], _img2Features._im_elev[i]);
+            pythonClient.extract(_img1Features._pyd[i], _img1Features._pyd_cloud[i], _img1Features._pyd_soil[i], cloud_ratio, featureMode,_img1Features._im_exg[i], _img1Features._im_elev[i], _img1Features._im_soil[i]);
+            pythonClient.extract(_img2Features._pyd[i], _img2Features._pyd_cloud[i], _img2Features._pyd_soil[i], cloud_ratio, featureMode,_img2Features._im_exg[i], _img2Features._im_elev[i], _img2Features._im_soil[i]);
         }
         // 		ImageFeature::imSIFT(_pyd1[i], _im1f[i], 2, 1, true, 8);
         // 		ImageFeature::imSIFT(_pyd2[i], _im2f[i], 2, 1, true, 8);
@@ -403,7 +402,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
     //kLabels.imshow("kLabels", 0);
 
     //t.toc("generate seeds: ");
-
+    std::cerr << "before forward matching: " << std::endl;
     t.tic();
     OnePass(_img1Features, _img2Features, _seeds, _neighbors, _pydSeedsFlow);
     t.toc("forward matching: ");
@@ -812,11 +811,12 @@ float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_
     //     for (int idx = 0; idx < ch; idx++)
     //         totalDiffExg += abs(p1[idx] - p2[idx]);
 
-    // // if( _useGeomFeats ) this is comented because sometimes they are calculated on the python side.
+    // if( _useGeomFeats ) this is comented because sometimes they are calculated on the python side.
+    // if(_featureMode >= 15)
     //     for (int idx = 0; idx < chCloud; idx++)
     //         totalDiffElev += abs(p1e[idx] - p2e[idx]);
-    // if( _useSoilFeats )
-    //     for (int idx = 0; idx < ch; idx++)
+    // if( _useSoilFeats || _featureMode >= 25)
+    //     for (int idx = 0; idx < chSoil; idx++)
     //         totalDiffSoil += abs(p1s[idx] - p2s[idx]);
 
 // #endif

@@ -116,6 +116,7 @@ private:
 
 	ImageFeatures _img1Features, _img2Features;
 	IntImage _kLabels, _kLabels2;
+	int _featureMode;
 
 	// FImagePyramid _pyd1;
     // FImagePyramid _pyd1_cloud;

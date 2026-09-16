@@ -37,12 +37,14 @@ std::string PythonClient::encodeImage(const cv::Mat& img) {
 
 void PythonClient::extract(
     const FImage& imgExg,
-    const FImage& imgElev,
-    float cloud_ratio,
-    const int method,
-    UCImage& outFtImg_Exg,
-    UCImage& outFtImg_Elev
-) {
+        const FImage& imgElev,
+        const FImage& imgSoil,
+        float cloud_ratio,
+        const int method,
+        UCImage& outFtImg_Exg,
+        UCImage& outFtImg_Elev,
+        UCImage& outFtImg_Soil
+    ){
     int w = imgExg.width();
     int h = imgExg.height();
 
@@ -53,6 +55,7 @@ void PythonClient::extract(
     nlohmann::json request;
     request["img_exg"] = encodeFImage(imgExg);
     request["img_elev"] = encodeFImage(imgElev);
+    request["img_soil"] = encodeFImage(imgSoil);
     request["cloud_ratio"] = cloud_ratio;
     request["id_method"] = method;
 
@@ -63,31 +66,29 @@ void PythonClient::extract(
     zmq::message_t header_msg;
     zmq::message_t exg_msg;
     zmq::message_t elev_msg;
-
+    zmq::message_t soil_msg;
     socket.recv(header_msg);
     socket.recv(exg_msg);
     socket.recv(elev_msg);
+    socket.recv(soil_msg);
 
     // ---- parse header ----
-    int dims[6];
+    int dims[9];
     std::memcpy(dims, header_msg.data(), sizeof(dims));
 
-    int H = dims[0];
-    int W = dims[1];
-    int C1 = dims[2];
-    int H2 = dims[3];
-    int W2 = dims[4];
-    int C2 = dims[5];
+    int H = dims[0], W = dims[1], C1 = dims[2];
+    int H2 = dims[3], W2 = dims[4], C2 = dims[5];
+    int W3 = dims[6], H3 = dims[7], C3 = dims[8];
+
     // std::cout << "Received header: H=" << H << ", W=" << W << ", C1=" << C1
     //           << ", H2=" << H2 << ", W2=" << W2 << ", C2=" << C2 << std::endl;
     // ---- allocate outputs ----
     outFtImg_Exg.allocate(W, H, C1);
     outFtImg_Elev.allocate(W2, H2, C2);
+    outFtImg_Soil.allocate(W3, H3, C3);
     // std::cout << "Allocated output image memory" << std::endl;
 
     // ---- copy directly into UCImage ----
-    size_t size_exg = H * W * C1 * sizeof(float);
-    size_t size_elev = H2 * W2 * C2 * sizeof(float);
 
     // const float* elev_ptr = static_cast<float*>(elev_msg.data());
     // std::cout << "Received feature data: exg size=" << size_exg << ", elev size=" << size_elev << std::endl;
@@ -96,7 +97,7 @@ void PythonClient::extract(
     // std::cout << "Copied EXG feature data" << std::endl;
 
     std::memcpy(outFtImg_Elev.pData, elev_msg.data(), H2*W2*C2);
-    
+    std::memcpy(outFtImg_Soil.pData, soil_msg.data(), H3*W3*C3);
     // for (int i = 0; i < H2 * W2 * C2; i++) {
     //     outFtImg_Elev.pData[i] =
     //         static_cast<unsigned char>(std::round(elev_ptr[i] * 255));

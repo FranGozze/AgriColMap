@@ -114,10 +114,10 @@ class PointCloudHandler{
         float _downsampling_rate = 0.15f;
         float _search_radius = 0.15f;
         bool _useVisualFeatures = true;
-        bool _useGeometricFeatures = true;
-        bool _useSoilFeatures = true;
+        bool _useGeometricFeatures = false;
+        bool _useSoilFeatures = false;
 
-        float _vis_feat_weight=1.0f, _geom_feat_weight=0.5f, _soil_feat_weight=0.5f;
+        float _vis_feat_weight=1.0f, _geom_feat_weight=0.5f, _soil_feat_weight=0.05f;
         bool _cloudVisualizationEnabled = false;
         bool _saveRegisteredClouds = false;
         bool _saveAffineTransform = true;
