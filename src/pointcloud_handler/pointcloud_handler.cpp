@@ -219,7 +219,7 @@ void PointCloudHandler::ExGFilterPCL(const string &cloud_key, const Vector3i& cl
     PCLPointCloudXYZRGB::Ptr soil_filtered( new PCLPointCloudXYZRGB() );
 
     for(PCLptXYZRGB pt : pclMap[cloud_key]->points){
-        if(computeExGforXYZRGBPoint(pt) > 30){
+        if(computeExGforXYZRGBPoint(pt) > 10){
             pt.r = cloud_color(0); pt.g = cloud_color(1); pt.b = cloud_color(2);
             data_filtered->points.push_back(pt);
         }

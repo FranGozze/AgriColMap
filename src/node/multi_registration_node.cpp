@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     PointCloudAligner pclAligner;
     pclAligner.initFromYaml(yaml_filename);
     // pclAligner.loadFromDisk(fix_cloud, mov_cloud);
-    pclAligner.loadFixedCloudFromDisk("dron_points_xyz", "RosarioV2Dron", fix_cloud );
+    pclAligner.loadFixedCloudFromDisk("dron_points_xyz_cut", "RosarioV2Dron", fix_cloud );
     pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255, 0, 0));
     
         
@@ -56,16 +56,16 @@ int main(int argc, char **argv)
         start = std::atoi(argv[8]);
         end = std::atoi(argv[9]);
     }
-    
+    assert(start < end +1);
     // int end = argc >= 9 ? std::atoi(argv[8]) : 6;
     // blue, green, cyan, magenta, yellow, Amethyst Purple: (155, 89, 182)
     Vector3i colors[6] = {Vector3i(0, 0, 255), Vector3i(0, 255, 0), Vector3i(0, 255, 255), Vector3i(255, 0, 255), Vector3i(255, 255, 0), Vector3i(155, 89, 182)};
-
+    std::string colorsString[6] = {"Blue", "Green", "Cyan", "Magenta", "Yellow", "Amethyst Purple"};
     for (int i = start; i < end + 1; i++)
     {   
         std::string number = std::to_string(i);
         std::string cloud_name = mov_cloud + "" + number;
-        cerr << FRED("Computing " + number + " cloud \n") ;
+        std::cerr << FRED("Computing " + number + " cloud \n") ;
         pclAligner.loadMovingCloudFromDisk("pointcloud_rgb"+number+"_20_imgs", "frames-RosarioV2-row"+row , cloud_name, fix_cloud, pclAligner.getScale(), "offset_rgb"+number+"_20_imgs");
         
         pclAligner.addNoise(cloud_name, scaleMag, TranslNoiseMag, YawNoiseMag);
@@ -106,6 +106,7 @@ int main(int argc, char **argv)
         {   
             std::string number = std::to_string(i);
             std::string cloud_name = mov_cloud + "" + number;
+            std::cerr << FRED("Visualizing " + number + " cloud with color " + colorsString[(i-1) % 6] + " \n");
             viz.showCloud(pclAligner.getFilteredPcl(cloud_name), cloud_name);
         }
         viz.spingUntilDeath();

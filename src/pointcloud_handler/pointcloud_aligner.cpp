@@ -206,6 +206,8 @@ void PointCloudAligner::showDOFCorrespondeces(const int& len, const std::string&
                       cv::Point(filteredMatches[4*i + 2]+size.width, filteredMatches[4*i + 3]),
                       cv::Scalar(0, 255, 0));
 
+    cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255,255,255), -1);
+    cv::circle(drawImg, cv::Point2f(_size.width/2.0 + _size.width, _size.height/2.0), 10, cv::Scalar(255,255,255), -1);
     cv::Mat drawImgRes;
     cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
 

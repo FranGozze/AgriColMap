@@ -30,10 +30,12 @@ public:
     void extract(
         const FImage& imgExg,
         const FImage& imgElev,
+        const FImage& imgSoil,
         float cloud_ratio,
         const int method,
         UCImage& outFtImg_Exg,
-        UCImage& outFtImg_Elev
+        UCImage& outFtImg_Elev,
+        UCImage& outFtImg_Soil
     );
 
     // MatchResult match(const FImage& img1, const FImage& img2, const int mode = 1);
