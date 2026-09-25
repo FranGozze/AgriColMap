@@ -81,7 +81,7 @@ def add_to_grouped_data(grouped_data, method, scale_noise_magnitude, transl_nois
                 "count": 0
             }
     grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["count"] += 1
-    if overrule_validation or (abs(transl_err) <= 0.1 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
+    if overrule_validation or (abs(transl_err) <= 0.05 and abs(angle_err) <= 0.2 and abs(scale_err) <= 2.5):
         # if True:
             grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["transl_err"].append(abs(transl_err))
             grouped_data[scale_noise_magnitude][transl_noise_magnitude][yaw_noise_magnitude][method]["angle_err"].append(abs(angle_err))
