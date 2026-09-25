@@ -35,26 +35,27 @@ int main(int argc, char **argv)
     pclAligner.computeExGFilteredPointCloud(fix_cloud, Vector3i(255, 0, 0));
     
         
-    string scaleMagStr = argv[2];
-    float scaleMag = stof(scaleMagStr) / 100;
-    string TranslNoiseMagStr = argv[3];
-    float TranslNoiseMag = stof(TranslNoiseMagStr) / 100;
-    string YawNoiseMagStr = argv[4];
-    float YawNoiseMag = stof(YawNoiseMagStr) / 10;
-    string ExpIDStr = argv[5];
-    if (argc >= 7)
+    float scaleMag = 0.f;
+    float TranslNoiseMag = 0.f;
+    float YawNoiseMag = 0.f;
+    string ExpIDStr = "0";
+
+    string suffix = argv[2];
+    suffix = suffix == "0" ? "" : "_" + suffix;
+
+    if (argc >= 4)
     {
-        string matchingModeStr = argv[6];
+        string matchingModeStr = argv[3];
         int matchingMode = stoi(matchingModeStr);
         pclAligner.setMatchingMode(matchingMode);
     }
-    std::string row = argc >= 8 ? argv[7] : "2";
+    std::string row = argc >= 5 ? argv[4] : "2";
     int start = 1, end = 6;
-    if(argc == 9)    
-        end = std::atoi(argv[8]);
-    if(argc == 10){
-        start = std::atoi(argv[8]);
-        end = std::atoi(argv[9]);
+    if(argc == 6)    
+        end = std::atoi(argv[5]);
+    if(argc == 7){
+        start = std::atoi(argv[5]);
+        end = std::atoi(argv[6]);
     }
     assert(start < end +1);
     // int end = argc >= 9 ? std::atoi(argv[8]) : 6;
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
         std::string number = std::to_string(i);
         std::string cloud_name = mov_cloud + "" + number;
         std::cerr << FRED("Computing " + number + " cloud \n") ;
-        pclAligner.loadMovingCloudFromDisk("pointcloud_rgb"+number+"_20_imgs", "frames-RosarioV2-row"+row , cloud_name, fix_cloud, pclAligner.getScale(), "offset_rgb"+number+"_20_imgs");
+        pclAligner.loadMovingCloudFromDisk("pointcloud_rgb"+number+suffix, "frames-RosarioV2-row"+row , cloud_name, fix_cloud, pclAligner.getScale(), "offset_rgb"+number+suffix);
         
         pclAligner.addNoise(cloud_name, scaleMag, TranslNoiseMag, YawNoiseMag);
         pclAligner.computeAndApplyInitialRelativeGuess(fix_cloud, cloud_name);
@@ -103,7 +104,7 @@ int main(int argc, char **argv)
         viz.setViewerBackground(255, 255, 255);
         viz.showCloud(pclAligner.getFilteredPcl(fix_cloud), fix_cloud);
         for (int i = start; i < end + 1; i++)
-        {   
+        {           
             std::string number = std::to_string(i);
             std::string cloud_name = mov_cloud + "" + number;
             std::cerr << FRED("Visualizing " + number + " cloud with color " + colorsString[(i-1) % 6] + " \n");
