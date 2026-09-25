@@ -20,11 +20,11 @@ void PointCloudAligner::computeAndApplyInitialRelativeGuess(const std::string& f
                     //getPointCloud(moving_cloud_key)->getInitGuessT() - getPointCloud(fixed_cloud_key)->getInitGuessT() );
         _initTfMap.emplace(moving_cloud_key, boost::shared_ptr<Transform>(new Transform(Transform::Identity())) );
         _initTfMap[moving_cloud_key]->translation() << diff_t.cast<float>();
-
-        _init_mov_scale(0) *= _scaleNoise(0);
-        _init_mov_scale(1) *= _scaleNoise(1);
-        cerr << FBLU("InitMovScale Set to: ") << _init_mov_scale.transpose() << "\n";
-        scalePointCloud( _init_mov_scale, moving_cloud_key, "rgb");
+        Vector2 scale = _init_mov_scale;                                                                
+        scale(0) *= _scaleNoise(0);
+        scale(1) *= _scaleNoise(1);
+        cerr << FBLU("InitMovScale Set to: ") << scale.transpose() << "\n";
+        scalePointCloud( scale, moving_cloud_key, "rgb");
 
         if( getVerbosityLevel() ){
             cerr << FYEL("Fixed_Cloud Rot_z amount: ") << initGuessQMap[fixed_cloud_key](2) << "\n";
@@ -96,8 +96,9 @@ void PointCloudAligner::addNoise(const std::string& cloud_key, const float& scal
     Vector2 vS = Eigen::Rotation2Df( CircleSamplingAngle )*v;
     vS(0) *= scaleMag + (.025*scaleMag - ( static_cast <float> (rand()) / static_cast <float> (RAND_MAX) ) * (.05 * scaleMag ));
     vS(1) *= scaleMag + (.025*scaleMag - ( static_cast <float> (rand()) / static_cast <float> (RAND_MAX) ) * (.05 * scaleMag ));
-    _scaleNoise(vS);
-    cerr << FBLU(" Scale Noise: ") << vS.transpose() << FBLU(" Scale Norm: ") << vS.norm() << "\n";
+    _scaleNoise += vS;
+    cerr << FBLU(" Scale Noise: ") << _scaleNoise.transpose() << FBLU(" Scale Norm: ") << _scaleNoise.norm() << "\n";
+    cerr << FBLU(" vS Noise: ") << vS.transpose() << FBLU(" vS Norm: ") << vS.norm() << "\n";
 }
 
 void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::string& cloud2_name)
