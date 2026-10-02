@@ -90,10 +90,14 @@ while True:
     elif id_method == 24:
         feat_exg = methods[0](img_exg)
         feat_elev = methods[15](img_elev, cloudRatio)
-    elif id_method == 25:
-        feat_exg = methods[0](img_exg)
-        feat_elev = methods[8](img_elev)
-        feat_soil = methods[0](img_soil)
+    elif id_method == 26 or id_method == 29:
+        feat_exg = methods[12](img_exg)
+        feat_elev = np.zeros((H, W, 33), dtype=np.float32)
+        feat_soil = methods[12](img_soil)
+    elif id_method == 27 or id_method == 30:
+        feat_exg = methods[12](img_exg)
+        feat_elev = methods[12](img_elev)
+        feat_soil = methods[12](img_soil)
     # ---- OPTIONAL: convert to uint8 here (faster) ----
     feat_exg = np.clip(feat_exg * 255, 0, 255).astype(np.uint8)
     feat_elev = feat_elev.astype(np.uint8)

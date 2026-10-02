@@ -25,7 +25,11 @@ class EnvironmentRepresentation{
         inline cv::Mat getXyzImg(){ return xyzImg; };
         inline cv::Mat getelevImg(){ return xyzImg; };
         inline cv::Mat getExgImg(){ return exgImg; };
-        inline cv::Mat getSoilImg(){ return soilImg; };
+        inline cv::Mat getSoilImg(int mode = 0){ switch(mode){
+            case 0: return soilImg_WE_3x3; // With Erosion 3x3
+            case 1: return soilImg_WE_5x5; // With Erosion 5x5
+            default: return soilImg_WE_3x3;
+        } };
 
         inline float getXCoord(){ return x_coord; }
         inline float getYCoord(){ return y_coord; }
@@ -41,6 +45,7 @@ class EnvironmentRepresentation{
         int _width, _height = 0;
         PCLptXYZRGB minPt, maxPt;
         float _square_size, x_coord, y_coord;
-        cv::Mat exgImg, elevImg, xyzImg, xyzImgUChar, exgImgColor, rgbImg, soilImg;
+        cv::Mat exgImg, elevImg, xyzImg, xyzImgUChar, exgImgColor, rgbImg;
+        cv::Mat soilImg_WE_3x3, soilImg_WE_5x5;
         int altitude_scale;
 };
