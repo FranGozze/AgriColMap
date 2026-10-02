@@ -59,6 +59,12 @@ class PointCloudHandler{
         bool inline cloudVisualizationEnabled(){ return _cloudVisualizationEnabled; }
         bool inline saveRegisteredClouds(){ return _saveRegisteredClouds; }
         bool inline saveAffineTransform(){ return _saveAffineTransform; }
+        std::string inline getSoilWeightString(){            
+            std::string weight_str = std::to_string(_soil_feat_weight);
+            // int index_point = weight_str.find(".");
+            return weight_str.erase(1,1).erase(weight_str.find("0",1), weight_str.length()-1); // Get the first decimal place
+            // return "0" + weight_str.substr(index_point + 1, index_point + 2); // Get the first two decimal places     
+        }
         std::string inline getFeatureString(){
             switch(matchingMode){
                 case 0: return "DAISY";
@@ -89,6 +95,38 @@ class PointCloudHandler{
                 case 23: return "Exg-Elev-Daisy-Gabor-HOG";
 
                 case 24: return "Daisy-FPFH";
+
+                case 25: return "ExG-Soil-Erosion3x3-Daisy-W" + getSoilWeightString();
+                case 26: return "ExG-Soil-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                case 27: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                
+                case 28: return "ExG-Soil-Erosion5x5-Daisy-W" + getSoilWeightString();                
+                case 29: return "ExG-Soil-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
+                case 30: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
+                
+                
+
+                
+                // case 32: return "ExG-Soil-Erosion5x5-Daisy-W01"; // Erosion5x5
+                // case 33: return "ExG-Soil-Erosion3x3-Daisy-W01";
+
+                // case 34: return "ExG-Soil-Erosion5x5-Daisy-Gabor-W01";
+                // case 35: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W01";
+                // case 36: return "ExG-Soil-Erosion3x3-Daisy-Gabor-W01";
+                // case 37: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W01";
+
+                // case 38: return "ExG-Soil-Erosion5x5-Daisy-W03"; // Erosion5x5
+                // case 39: return "ExG-Soil-Erosion3x3-Daisy-W03";
+
+                // case 40: return "ExG-Soil-Erosion5x5-Daisy-W05"; // Erosion5x5
+                // case 41: return "ExG-Soil-Erosion3x3-Daisy-W05";
+
+                // case 42: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W03";                
+                // case 43: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W03";
+
+                // case 44: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W05";
+                // case 45: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W05";
+
                 default: return "UNKWON";
             }
         }
