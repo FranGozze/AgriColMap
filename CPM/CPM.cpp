@@ -779,10 +779,10 @@ float CPM::MatchCost(ImageFeatures &imgF1, ImageFeatures &imgF2, int level, int 
             totalDiffExg += abs(p1[idx] - p2[idx]);
 
     // if( _useGeomFeats ) this is comented because sometimes they are calculated on the python side.
-    if(_featureMode >= 15)
+    if(_useGeomFeats || _featureMode >= 15)
         for (int idx = 0; idx < chCloud; idx++)
             totalDiffElev += abs(p1e[idx] - p2e[idx]);
-    if( _useSoilFeats || _featureMode >= 25)
+    if(_useSoilFeats || _featureMode >= 25)
         for (int idx = 0; idx < chSoil; idx++)
             totalDiffSoil += abs(p1s[idx] - p2s[idx]);
 

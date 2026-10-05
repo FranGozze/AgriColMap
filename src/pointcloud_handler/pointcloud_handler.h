@@ -96,36 +96,13 @@ class PointCloudHandler{
 
                 case 24: return "Daisy-FPFH";
 
-                case 25: return "ExG-Soil-Erosion3x3-Daisy-W" + getSoilWeightString();
-                case 26: return "ExG-Soil-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
-                case 27: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                case 25: return "ExG-Soil-Enhanced-Erosion3x3-Daisy-W" + getSoilWeightString();
+                case 26: return "ExG-Soil-Enhanced-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                case 27: return "ExG-Elev-Soil-Enhanced-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
                 
-                case 28: return "ExG-Soil-Erosion5x5-Daisy-W" + getSoilWeightString();                
-                case 29: return "ExG-Soil-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
-                case 30: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
-                
-                
-
-                
-                // case 32: return "ExG-Soil-Erosion5x5-Daisy-W01"; // Erosion5x5
-                // case 33: return "ExG-Soil-Erosion3x3-Daisy-W01";
-
-                // case 34: return "ExG-Soil-Erosion5x5-Daisy-Gabor-W01";
-                // case 35: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W01";
-                // case 36: return "ExG-Soil-Erosion3x3-Daisy-Gabor-W01";
-                // case 37: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W01";
-
-                // case 38: return "ExG-Soil-Erosion5x5-Daisy-W03"; // Erosion5x5
-                // case 39: return "ExG-Soil-Erosion3x3-Daisy-W03";
-
-                // case 40: return "ExG-Soil-Erosion5x5-Daisy-W05"; // Erosion5x5
-                // case 41: return "ExG-Soil-Erosion3x3-Daisy-W05";
-
-                // case 42: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W03";                
-                // case 43: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W03";
-
-                // case 44: return "ExG-Elev-Soil-Erosion5x5-Daisy-Gabor-W05";
-                // case 45: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W05";
+                case 28: return "ExG-Soil-Enhanced-Erosion5x5-Daisy-W" + getSoilWeightString();                
+                case 29: return "ExG-Soil-Enhanced-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
+                case 30: return "ExG-Elev-Soil-Enhanced-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
 
                 default: return "UNKWON";
             }
