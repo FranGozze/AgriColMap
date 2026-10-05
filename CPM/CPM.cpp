@@ -812,12 +812,12 @@ float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_
     //         totalDiffExg += abs(p1[idx] - p2[idx]);
 
     // if( _useGeomFeats ) this is comented because sometimes they are calculated on the python side.
-    // if(_featureMode >= 15)
-    //     for (int idx = 0; idx < chCloud; idx++)
-    //         totalDiffElev += abs(p1e[idx] - p2e[idx]);
-    // if( _useSoilFeats || _featureMode >= 25)
-    //     for (int idx = 0; idx < chSoil; idx++)
-    //         totalDiffSoil += abs(p1s[idx] - p2s[idx]);
+    if(_useGeomFeats || _featureMode >= 15)
+        for (int idx = 0; idx < chCloud; idx++)
+            totalDiffElev += abs(p1e[idx] - p2e[idx]);
+    if(_useSoilFeats || _featureMode >= 25)
+        for (int idx = 0; idx < chSoil; idx++)
+            totalDiffSoil += abs(p1s[idx] - p2s[idx]);
 
 // #endif
     // std::cerr << _useVisFeats << " " << _useGeomFeats << " " << _vis_weight << " " << _geom_weight << " soil_weight: " << _soil_weight << "totalSoil " <<  _soil_weight * totalDiffSoil<< " fine \n";

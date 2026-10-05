@@ -117,7 +117,6 @@ void EnvironmentRepresentation::computeMMGridMap()
     xyzImg = cv::Mat(cv::Size(_height, _width), CV_32FC3, cv::Scalar(0, 0, 0));
     exgImgColor = cv::Mat(cv::Size(_height, _width), CV_8UC3, cv::Scalar(0, 0, 0));
     rgbImg = cv::Mat(cv::Size(_height, _width), CV_8UC3, cv::Scalar(0, 0, 0));
-    soilImg_WOE = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0)); // Without Erosion
     soilImg_WE_3x3 = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0));
     soilImg_WE_5x5 = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0)); // With Erosion
     cv::Mat soilImg = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0)); 
@@ -148,14 +147,35 @@ void EnvironmentRepresentation::computeMMGridMap()
             rgbImg.at<cv::Vec3b>(c, r)[2] = pt.r;
         }
     }
+
+    cv::Mat imgNormalized;
+    cv::normalize(soilImg, imgNormalized, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+    // 3. CLAHE adaptativo con un clipLimit más alto para rescatar detalles tenue
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(4.0, cv::Size(8, 8));
+    cv::Mat imgEnhanced;
+    clahe->apply(imgNormalized, imgEnhanced);
+
+    // 4. Corrección Gamma agresiva (gamma = 0.35)
+    double gamma = 0.35;
+    double invGamma = 1.0 / gamma;
+    cv::Mat lut(1, 256, CV_8U);
+    uchar* ptr = lut.ptr();
+    for (int i = 0; i < 256; ++i) {
+        ptr[i] = cv::saturate_cast<uchar>(std::pow(i / 255.0, invGamma) * 255.0);
+    }
+    cv::Mat imgGammaCorrected;
+    cv::LUT(imgEnhanced, lut, imgGammaCorrected);
+    
+    
     const cv::Mat morphologyKernel_3x3 = cv::getStructuringElement(
         cv::MORPH_ELLIPSE, cv::Size(3, 3));
-    cv::erode(soilImg, soilImg_WE_3x3, morphologyKernel_3x3);
+    cv::erode(imgGammaCorrected, soilImg_WE_3x3, morphologyKernel_3x3);
     cv::dilate(soilImg_WE_3x3, soilImg_WE_3x3, morphologyKernel_3x3);
 
     const cv::Mat morphologyKernel_5x5 = cv::getStructuringElement(
         cv::MORPH_ELLIPSE, cv::Size(5, 5));
-    cv::erode(soilImg, soilImg_WE_5x5, morphologyKernel_5x5);
+    cv::erode(imgGammaCorrected, soilImg_WE_5x5, morphologyKernel_5x5);
     cv::dilate(soilImg_WE_5x5, soilImg_WE_5x5, morphologyKernel_5x5);
 
     cv::normalize(xyzImg, xyzImgUChar, 255, 0, cv::NORM_MINMAX);
