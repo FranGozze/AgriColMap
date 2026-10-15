@@ -87,7 +87,7 @@ class PointCloudHandler{
                 case 23: return "Exg-Elev-Daisy-Gabor-HOG";
 
                 case 24: return "Daisy-FPFH";
-                default: return "UNKWON";
+                default: return "UNKWOWN";
             }
         }
 
