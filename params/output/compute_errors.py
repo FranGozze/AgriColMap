@@ -1,13 +1,16 @@
 from pathlib import Path
 import numpy as np
-from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics, print_metrics_latex
+from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics, print_metrics_latex, plot_metrics, print_metrics_heatmap
 import csv
 import argparse
 
 debug = False
 latex = False
 overrule_validation = False
+show_plots = False
+save_plots = False
 
+latex_heatmap = False
 
 def printDebugInfo(message):
     if debug:
@@ -93,6 +96,18 @@ def add_to_grouped_data(grouped_data, method, scale_noise_magnitude, transl_nois
     #     fail_reasons += f" angle_err: {angle_err}" if abs(angle_err) > 0.1 else ""
     #     fail_reasons += f" scale_err: {scale_err}" if abs(scale_err) > 2.5 else ""
     #     printDebugInfo(f"Failed registration case: {file_name} ({fail_reasons})")
+def show_data(rowNumber, grouped_data, filter_scale=None, filter_transl_noise=None, filter_yaw_noise=None):
+    if show_plots:
+        plot_metrics(rowNumber, grouped_data)
+    elif save_plots:
+        plot_metrics(rowNumber, grouped_data, save_path=f"plots")
+    elif latex:
+        print_metrics_latex(rowNumber, grouped_data, save_path=f"latex_tables")
+    elif latex_heatmap:
+        print_metrics_heatmap(rowNumber, grouped_data, save_path=f"latex_tables")
+    else:
+        print_metrics(rowNumber, grouped_data)
+
 def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=None, scale_noise_filter=None, yaw_noise_filter=None, method_filter=None):
     row5_data = np.loadtxt(gt_path)
     # file_list = parse_text_list(results_folder)
@@ -152,10 +167,7 @@ def process_folder(gt_path, results_folder, rowNumber=None, transl_noise_filter=
         counter += 1
     print(f"Processed: {counter}")
     if succ_number > 0:
-        if latex:
-            print_metrics_latex(rowNumber, grouped_data)
-        else:
-            print_metrics(rowNumber,grouped_data)
+        show_data(rowNumber, grouped_data, filter_scale=scale_noise_filter, filter_transl_noise=transl_noise_filter, filter_yaw_noise=yaw_noise_filter)
         print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")
         # print(f"Max transl err: {max([max(grouped_data[scale][transl][yaw][method]['transl_err']) for scale in grouped_data for transl in grouped_data[scale] for yaw in grouped_data[scale][transl] for method in grouped_data[scale][transl][yaw]])}")
         # print(f"Max angle err: {max([max(grouped_data[scale][transl][yaw][method]['angle_err']) for scale in grouped_data for transl in grouped_data[scale] for yaw in grouped_data[scale][transl] for method in grouped_data[scale][transl][yaw]])}")
@@ -175,7 +187,7 @@ def process_compact_file(curr_file, gt_file, transl_noise_filter=None, scale_noi
     global latex
     row5_data = np.loadtxt(gt_file)
     s_gt5, s_init5, Aff_gt5, t_gt5 = extract_from_gt_file(row5_data)
-    rowNumber = gt_file.split(".")[0][-1]  # Extract row number from GT file name
+    rowNumber = gt_file.split("_")[0][-1]  # Extract row number from GT file name
 
     existing_data = []
     try:
@@ -209,10 +221,7 @@ def process_compact_file(curr_file, gt_file, transl_noise_filter=None, scale_noi
                 succ_number += 1
         print(f"Processed: {counter}")
         if succ_number > 0:
-            if latex:
-                print_metrics_latex(rowNumber, grouped_data)
-            else:
-                print_metrics(rowNumber,grouped_data)
+            show_data(rowNumber, grouped_data, filter_scale=scale_noise_filter, filter_transl_noise=transl_noise_filter, filter_yaw_noise=yaw_noise_filter)
             print(f"Success ratio: {succ_number / counter * 100:.6f} %. Failed cases: {counter - succ_number}.")        
         else:
             print("No valid cases processed.")
@@ -227,24 +236,31 @@ def main():
     parser.add_argument('-f', '--file',  default=None, help='specific result file to process (overrides --results)')
     parser.add_argument('-c', '--complete', action="store_true", help="show all the soybean rows")
     parser.add_argument('-o', '--output', help='name of output file plot')
-    parser.add_argument('--show_plots', action="store_true", help='TODO: whether to show the plots after processing')
-    parser.add_argument('--save_plots', action="store_true", help='TODO: whether to save the plots after processing')
+    parser.add_argument('-p', '--show_plots', action="store_true", help='TODO: whether to show the plots after processing')
+    parser.add_argument('-sp', '--save_plots', action="store_true", help='TODO: whether to save the plots after processing')
     parser.add_argument('-t', '--filter_transl_noise',  default=None, help='filter out cases without translational noise selected')
     parser.add_argument('-s', '--filter_scale_noise',  default=None, help='filter out cases without scale noise selected')
     parser.add_argument('-y', '--filter_yaw_noise',  default=None, help='filter out cases without yaw noise selected')
     parser.add_argument('-m', '--filter_method',  default=None, help='filter out cases without specific method selected')
     parser.add_argument('-d', '--debug', action="store_true", help='enable debug output')
     parser.add_argument('-l','--latex', action="store_true", help='output results in LaTeX table format')
+    parser.add_argument('-lh','--latex_heatmap', action="store_true", help='output results in LaTeX table format')
     parser.add_argument('--overrule_validation', action="store_true", help='overrule validation and consider all cases as successful')
     parser.add_argument('--compact_file', default=None, help='path to compact results file to process (overrides --results)')
     parser.add_argument('-cc','--complete_compacted', action="store_true", help="show all the soybean rows")
     args = parser.parse_args()
     global latex
     latex = args.latex
+    global latex_heatmap
+    latex_heatmap = args.latex_heatmap
     global debug 
     debug = args.debug
     global overrule_validation
     overrule_validation = args.overrule_validation
+    global show_plots
+    show_plots = args.show_plots
+    global save_plots
+    save_plots = args.save_plots
 
     root = Path(__file__).resolve().parent
     if args.complete_compacted:

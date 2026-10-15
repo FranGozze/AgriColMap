@@ -14,6 +14,7 @@ python/venv/
 python/SuperGluePretrainedNetwork/
 python/RoMa
 python/__pycache__/
+python/OpenMVS_Ubuntu_x64/
 python/received_*
 cppzmq/
 params/output/__pycache__/
@@ -23,3 +24,5 @@ imgs/
 *Rosario*
 params/output/old_RosarioV2Ground-row2/
 params/output/clouds/
+params/output/plots/
+params/output/latex_tables/
