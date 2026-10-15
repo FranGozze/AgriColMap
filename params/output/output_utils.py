@@ -86,16 +86,14 @@ def print_metrics_latex(row_number, group, label="Registration Error Metrics", s
 def print_metrics_heatmap(row_number, group, label="Registration Success Rate", save_path=None):
     
     def color(value, mean, vmin, vmax):
-        delta1 = mean - vmin
-        delta2 = vmax - vmin
-        assert delta1 > 0 and delta2 > 0, f"Invalid range: mean={mean}, vmin={vmin}, vmax={vmax}"
-        A = (0.5 * delta2 - delta1) / (delta1 * delta2 * (delta1 - delta2))
-        B = (1 - A * (delta2**2)) / delta2
-        x = A * ((value - vmin)**2) + B * (value - vmin)
-        assert 0.0 <= x <= 1.0, f"Invalid color value: {x} for value={value}, mean={mean}, vmin={vmin}, vmax={vmax}"
-        return x
+        assert vmin <= value <= vmax, f"Invalid range: mean={mean}, vmin={vmin}, vmax={vmax}"
+        if value <= mean:
+            return 0.5 * (value - vmin) / (mean - vmin) 
+        else:
+            return 0.5 + 0.5 * (value - mean) / (vmax - mean) if vmax > mean else 1.0        
     def success_cell_color(value, mean, vmin, vmax):
         x = color(value, mean, vmin, vmax)
+        assert 0.0 <= x <= 1.0, f"Invalid color value: {x} for value={value}, mean={mean}, vmin={vmin}, vmax={vmax}"
         return f"{1-x:.3f} {x:.3f} 0.000"
     def error_cell_color(value, mean, vmin, vmax):
         x = color(value, mean, vmin, vmax)
