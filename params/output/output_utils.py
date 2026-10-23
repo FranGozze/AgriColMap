@@ -1,6 +1,6 @@
 import numpy as np
 from pathlib import Path
-
+import matplotlib.pyplot as plt
 
 def load_numeric_file(path):
     return np.loadtxt(path, dtype=float)
@@ -30,9 +30,6 @@ def scale_matrix(A, s):
     B[:, 2] = A[:, 2] / s[2]
     return B
 
-
-def banned_method(method):
-    return method.lower() == "unkwown" or method.lower() == "unkwon" or "soil" in method.lower() or "lss" in method.lower() or method.lower() == "resnet" or "2" in method
 def print_metrics(rowNumber, group):
     print("\nRegistration Error Metrics (averaged over successful cases):")
     print("Scale_mag trans_mag yaw_mag row succesRate  Method   Transl Err  Angle Err  Scale Err")
@@ -47,43 +44,15 @@ def print_metrics(rowNumber, group):
                         avg_angle_err = np.mean(group[scale][transl_noise][yaw_noise][method]['angle_err'])
                         avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
                         success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100
-                        print(f"{float(scale):.2f}%,      {(float(transl_noise)*2.5):.2f} m,  {float(yaw_noise):.2f}º,  {rowNumber},    {samples} / {group[scale][transl_noise][yaw_noise][method]['count']}   {method},   {float(avg_transl_err):.3f}m,     {float(avg_angle_err):.3f}º,    {(float(avg_scale_err)*100):.2f} %")
+                        print(f"{float(scale):.2f}%,      {(float(transl_noise)):.2f} m,  {float(yaw_noise):.2f}º,  {rowNumber},    {samples} / {group[scale][transl_noise][yaw_noise][method]['count']}   {method},   {float(avg_transl_err):.3f}m,     {float(avg_angle_err):.3f}º,    {(float(avg_scale_err)*100):.2f} %")
     print("\n")
 
 
-def print_metrics_latex(row_number, group, label="Registration Error Metrics", save_path=None):
-    save_path = Path(save_path)
-    save_path.mkdir(parents=True, exist_ok=True)
-    with open(save_path / f"row_{row_number}_metrics.tex", "w", encoding="utf-8") as f:
-        f.write(f"%File: row_{row_number}_metrics.tex\n")
-        f.write("\\begin{table*}[t] \n \\centering\n")
-        f.write("\\begin{tabular}{c|r|l|l|r|r}\n")
-        f.write("\\toprule\n")
-        f.write("Scale Noise & Method & Succes rate  & Transl Err (m) & Angle Err (deg) & Scale Err (\\%) \\\\ \n")
-
-        for scale in sorted(group.keys()):
-            for transl_noise in sorted(group[scale].keys()):
-                for yaw_noise in sorted(group[scale][transl_noise].keys()):
-                    f.write("\\midrule\n")
-                    f.write("\\multirow{" + str(len(group[scale][transl_noise][yaw_noise].keys())) + "}{*}{" + f"{float(scale)*100:.2f} \%"  + "}\n")
-                    for method in sorted(group[scale][transl_noise][yaw_noise].keys()):
-                        if banned_method(method):
-                            continue
-                        samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                        if samples > 0:
-                            avg_transl_err = np.mean(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                            avg_angle_err = np.mean(group[scale][transl_noise][yaw_noise][method]['angle_err'])
-                            avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
-                            success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100
-                            f.write(
-                                f"& {success_rate:.1f} \% & {method} & {float(avg_transl_err):.3f} & {float(avg_angle_err):.3f} & {(float(avg_scale_err)):.3f} \\\\ \n")
-        f.write("\\bottomrule\n")
-        f.write("\\end{tabular}\n")
-        f.write("\\end{table*}\n")
-        f.write("\n")
-
-
-def print_metrics_heatmap(row_number, group, label="Registration Success Rate", save_path=None):
+def print_metrics_latex(row_number, group, label="Registration Error Metrics"):
+    print(f"% {label}")
+    print("\\begin{tabular}{c|r|l|l|r|r}")
+    print("\\toprule")
+    print("Scale Noise & Succes rate &  Method & Transl Err (m) & Angle Err (deg) & Scale Err (\\%) \\\\ ")
     
     def color(value, mean, vmin, vmax):
         assert vmin <= value <= vmax, f"Invalid range: mean={mean}, vmin={vmin}, vmax={vmax}"
@@ -159,8 +128,9 @@ def print_metrics_heatmap(row_number, group, label="Registration Success Rate", 
         
 
 
-def plot_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
-    import matplotlib.pyplot as plt
+
+def plot_success_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
+    
 
     scales = sorted(group.keys())
     transl_noises = sorted(group[scales[0]].keys())
@@ -197,8 +167,56 @@ def plot_metrics(row_number, group, title="Registration Error Metrics", save_pat
                 else:                
                     save_path = Path(save_path)
                     save_path.mkdir(parents=True, exist_ok=True)
-                    plt.savefig(save_path / f"row_{row_number}_metrics_scale_{scale}_transl_{transl_noise}_yaw_{yaw_noise}.png", bbox_inches='tight')
+                    plt.savefig(save_path / f"row_{row_number}_success_metrics_scale_{scale}_transl_{transl_noise}_yaw_{yaw_noise}.png", bbox_inches='tight')
 
+def plot_error_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
+    scales = sorted(group.keys())
+    transl_noises = sorted(group[scales[0]].keys())
+    yaw_noises = sorted(group[scales[0]][transl_noises[0]].keys())
+    methods = sorted(group[scales[0]][transl_noises[0]][yaw_noises[0]].keys())
+    
+    for scale in scales:
+        for transl_noise in transl_noises:
+            for yaw_noise in yaw_noises:
+               
+                plt.figure(figsize=(20, 8))                
+                counter = 0
+                plt.title(f"{title} - Scale: {float(scale)*100:.2f}%, Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º")
+                plt.xlabel("Methods")
+                labels = []
+                for method in methods:
+                    if banned_method(method):
+                        continue
+                    samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
+                    if samples > 0:
+                        
+                        plt.subplot(1, 3, 1)
+                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['transl_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor='lightblue'))
+                        plt.ylabel("Translation Error (m)")
+                        plt.ylim(0, 0.12)
+                        plt.subplot(1, 3, 2)
+                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['angle_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor='lightgreen'))
+                        plt.ylabel("Angle Error (º)")
+                        plt.ylim(0, 0.22)
+                        plt.subplot(1, 3, 3)
+                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['scale_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor='lightcoral'))
+                        plt.ylabel("Scale Error")
+                        plt.ylim(0, 2.55)                        
+                        labels.append(f"{counter}-{method}")
+                        counter += 1
+
+                plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), labels=labels,)
+                plt.grid(axis='y')
+                if save_path is None:
+                    plt.show()
+                else:                
+                    save_path = Path(save_path)
+                    save_path.mkdir(parents=True, exist_ok=True)
+                    plt.savefig(save_path / f"row_{row_number}_error_metrics_scale_{scale}_transl_{transl_noise}_yaw_{yaw_noise}.png", bbox_inches='tight')
+
+def plot_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
+    plot_success_metrics(row_number, group, title=title, save_path=save_path)
+    plot_error_metrics(row_number, group, title=title, save_path=save_path)
 
 
 def compute_angle(A):
