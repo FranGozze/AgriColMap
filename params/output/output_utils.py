@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+import math
 
 def load_numeric_file(path):
     return np.loadtxt(path, dtype=float)
@@ -29,6 +30,10 @@ def scale_matrix(A, s):
     B[:, 1] = A[:, 1] / s[1]
     B[:, 2] = A[:, 2] / s[2]
     return B
+def banned_method(method):
+    banned_methods = ["unkwon", "unkwown", "resnet"]
+    contains_banned = ["soil", "lss", "2"]    
+    return method.lower() in banned_methods or [c in method.lower() for c in contains_banned].count(True) > 0
 
 def print_metrics(rowNumber, group):
     print("\nRegistration Error Metrics (averaged over successful cases):")
@@ -125,9 +130,17 @@ def print_metrics_latex(row_number, group, label="Registration Error Metrics"):
         f.write("\n\\bottomrule\n")
         f.write("\\end{tabular}\n")
         f.write("\\end{table*}\n")
+        fig.suptitle(f"{title} , Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º")
+    plt.ylabel("Success Rate (%)")
+    plt.ylim(0, _max)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.grid(axis='y')
+    if save_path is None:
+        plt.show()
+    else:                
+        save_path = Path(save_path)
+        save_path.mkdir(parents=True, exist_ok=True)
         
-
-
 
 def plot_success_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
     
@@ -136,44 +149,114 @@ def plot_success_metrics(row_number, group, title="Registration Error Metrics", 
     transl_noises = sorted(group[scales[0]].keys())
     yaw_noises = sorted(group[scales[0]][transl_noises[0]].keys())
     methods = sorted(group[scales[0]][transl_noises[0]][yaw_noises[0]].keys())
-    _max = 0
     
+    def get_title(scale, transl_noise, yaw_noise):
+        if len(scales) > 1:
+            return f"{title} - row:{row_number} - Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º"
+        elif len(transl_noises) > 1:
+            return f"{title} - row:{row_number} - Scale: {float(scale)*100:.2f}%, Yaw Noise: {float(yaw_noise):.2f}º"
+        elif len(yaw_noises) > 1:
+            return f"{title} - row:{row_number} - Scale: {float(scale)*100:.2f}%, Transl Noise: {float(transl_noise):.2f} m"
+        else:
+            return f"{title} - row:{row_number} - Scale: {float(scale)*100:.2f}%, Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º"
+
+    def get_subtitle(scale, transl_noise, yaw_noise):
+        if len(scales) > 1:
+            return f"Scale: {float(scale)*100:.2f}%"
+        elif len(transl_noises) > 1:
+            return f"Transl Noise: {float(transl_noise):.2f} m"
+        elif len(yaw_noises) > 1:
+            return f"Yaw Noise: {float(yaw_noise):.2f}º"
+        else:
+            return f"{title} - Scale: {float(scale)*100:.2f}%, Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º"
+    
+    fig = plt.figure(figsize=(20, 8))
+    fig.suptitle(get_title(scales[0], transl_noises[0], yaw_noises[0]))
+    c2 = 1
     for scale in scales:
         for transl_noise in transl_noises:
-            for yaw_noise in yaw_noises:
-               
-                plt.figure(figsize=(20, 8))
+            for yaw_noise in yaw_noises:                
+                plt.subplot(2, 3, c2)
+                c2 += 1
                 counter = 0
                 for method in methods:
-                    if banned_method(method):
+                    if banned_method(method) or method not in group[scale][transl_noise][yaw_noise]:
                         continue
                     samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
                     if samples > 0:
-                        avg_transl_err = np.mean(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                        avg_angle_err = np.mean(group[scale][transl_noise][yaw_noise][method]['angle_err'])
-                        avg_scale_err = np.mean(group[scale][transl_noise][yaw_noise][method]['scale_err'])
-                        success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100
-                        _max = max(_max, success_rate + 5)
-                        plt.bar(f"{counter}", success_rate, label=f"{counter}-{method}")
-                        counter += 1
-
-                plt.title(f"{title} - Scale: {float(scale)*100:.2f}%, Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º")
+                        success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100                        
+                        plt.bar(f"{counter}", success_rate, label=f"{counter}-{method}", color=plt.cm.brg((counter + 1) / max(len(methods), 1)))
+                        counter += 1                    
+                plt.title(get_subtitle(scale, transl_noise, yaw_noise))
                 plt.ylabel("Success Rate (%)")
-                plt.ylim(0, _max)
-                plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                plt.ylim(0, 105)
                 plt.grid(axis='y')
-                if save_path is None:
-                    plt.show()
-                else:                
-                    save_path = Path(save_path)
-                    save_path.mkdir(parents=True, exist_ok=True)
-                    plt.savefig(save_path / f"row_{row_number}_success_metrics_scale_{scale}_transl_{transl_noise}_yaw_{yaw_noise}.png", bbox_inches='tight')
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if save_path is None:
+        fig.tight_layout()
+        plt.show()
+    else:                
+        save_path = Path(save_path)
+        save_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path / f"row_{row_number}_success_metrics_scale_{scale}_transl_{transl_noise}_yaw_{yaw_noise}.png", bbox_inches='tight')
+
+
+# def plot_success_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
+    
+
+#     scales = sorted(group.keys())
+#     transl_noises = sorted(group[scales[0]].keys())
+#     yaw_noises = sorted(group[scales[0]][transl_noises[0]].keys())
+#     methods = sorted(group[scales[0]][transl_noises[0]][yaw_noises[0]].keys())
+#     plot_methods = [method for method in methods if not banned_method(method)]
+    
+#     _max = 110
+#     success_rates = {}
+#     for scale in sorted(group.keys()):
+#         for transl_noise in sorted(group[scale].keys()):
+#             for yaw_noise in sorted(group[scale][transl_noise].keys()):
+               
+#                 counter = 0
+#                 for method in sorted(group[scale][transl_noise][yaw_noise].keys()):
+#                     if banned_method(method):
+#                         continue
+#                     samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
+#                     if samples > 0:
+#                         success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100
+#                         if method not in success_rates:
+#                             success_rates[method] = []
+#                         success_rates[method].append(success_rate)
+#     plt.figure(figsize=(20, 8))
+#     counter = 0
+#     # print(plt.cm.datad)
+#     # print([(key, len(plt.cm.datad[key])) for key in plt.cm.datad.keys()])
+#     for method in success_rates:                        
+#         plt.plot(transl_noises[:len(success_rates[method])], success_rates[method], marker='o',
+#                  color=plt.cm.brg((counter + 1) / max(len(success_rates), 1)), label=f"{counter}-{method}")
+#         counter += 1
+
+#     plt.title(f"{title} , Transl Noise: {float(transl_noise):.2f} m, Yaw Noise: {float(yaw_noise):.2f}º")
+#     plt.ylabel("Success Rate (%)")
+#     plt.ylim(0, _max)
+#     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+#     plt.grid(axis='y')
+#     if save_path is None:
+#         plt.show()
+#     else:                
+#         save_path = Path(save_path)
+#         save_path.mkdir(parents=True, exist_ok=True)
+#         plt.savefig(save_path / f"row_{row_number}_success_metrics_scale_{scale}_transl_{transl_noise}_yaw_{yaw_noise}.png", bbox_inches='tight')
 
 def plot_error_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
     scales = sorted(group.keys())
     transl_noises = sorted(group[scales[0]].keys())
     yaw_noises = sorted(group[scales[0]][transl_noises[0]].keys())
     methods = sorted(group[scales[0]][transl_noises[0]][yaw_noises[0]].keys())
+    plot_methods = [method for method in methods if not banned_method(method)]
+    colors = {
+        method: plt.cm.hsv(index / max(len(plot_methods), 1))
+        for index, method in enumerate(plot_methods)
+    }
     
     for scale in scales:
         for transl_noise in transl_noises:
@@ -191,15 +274,15 @@ def plot_error_metrics(row_number, group, title="Registration Error Metrics", sa
                     if samples > 0:
                         
                         plt.subplot(1, 3, 1)
-                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['transl_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor='lightblue'))
+                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['transl_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor=colors[method]))
                         plt.ylabel("Translation Error (m)")
                         plt.ylim(0, 0.12)
                         plt.subplot(1, 3, 2)
-                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['angle_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor='lightgreen'))
+                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['angle_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor=colors[method]))
                         plt.ylabel("Angle Error (º)")
                         plt.ylim(0, 0.22)
                         plt.subplot(1, 3, 3)
-                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['scale_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor='lightcoral'))
+                        plt.boxplot(group[scale][transl_noise][yaw_noise][method]['scale_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor=colors[method]))
                         plt.ylabel("Scale Error")
                         plt.ylim(0, 2.55)                        
                         labels.append(f"{counter}-{method}")
@@ -216,7 +299,7 @@ def plot_error_metrics(row_number, group, title="Registration Error Metrics", sa
 
 def plot_metrics(row_number, group, title="Registration Error Metrics", save_path=None):
     plot_success_metrics(row_number, group, title=title, save_path=save_path)
-    plot_error_metrics(row_number, group, title=title, save_path=save_path)
+    # plot_error_metrics(row_number, group, title=title, save_path=save_path)
 
 
 def compute_angle(A):

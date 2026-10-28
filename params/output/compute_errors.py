@@ -1,6 +1,6 @@
 from pathlib import Path
 import numpy as np
-from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics, print_metrics_latex, plot_metrics, print_metrics_heatmap
+from output_utils import parse_text_list, scale_from_matrix, scale_matrix, compute_angle, print_metrics, print_metrics_latex, plot_metrics
 import csv
 import argparse
 
@@ -103,8 +103,8 @@ def show_data(rowNumber, grouped_data, filter_scale=None, filter_transl_noise=No
         plot_metrics(rowNumber, grouped_data, save_path=f"plots")
     elif latex:
         print_metrics_latex(rowNumber, grouped_data, save_path=f"latex_tables")
-    elif latex_heatmap:
-        print_metrics_heatmap(rowNumber, grouped_data, save_path=f"latex_tables")
+    # elif latex_heatmap:
+    #     print_metrics_heatmap(rowNumber, grouped_data, save_path=f"latex_tables")
     else:
         print_metrics(rowNumber, grouped_data)
 
@@ -244,15 +244,15 @@ def main():
     parser.add_argument('-m', '--filter_method',  default=None, help='filter out cases without specific method selected')
     parser.add_argument('-d', '--debug', action="store_true", help='enable debug output')
     parser.add_argument('-l','--latex', action="store_true", help='output results in LaTeX table format')
-    parser.add_argument('-lh','--latex_heatmap', action="store_true", help='output results in LaTeX table format')
+    # parser.add_argument('-lh','--latex_heatmap', action="store_true", help='output results in LaTeX table format')
     parser.add_argument('--overrule_validation', action="store_true", help='overrule validation and consider all cases as successful')
     parser.add_argument('--compact_file', default=None, help='path to compact results file to process (overrides --results)')
     parser.add_argument('-cc','--complete_compacted', action="store_true", help="show all the soybean rows")
     args = parser.parse_args()
     global latex
     latex = args.latex
-    global latex_heatmap
-    latex_heatmap = args.latex_heatmap
+    # global latex_heatmap
+    # latex_heatmap = args.latex_heatmap
     global debug 
     debug = args.debug
     global overrule_validation
