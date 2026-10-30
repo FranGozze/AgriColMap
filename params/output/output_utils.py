@@ -35,6 +35,38 @@ def banned_method(method):
     contains_banned = ["soil", "lss", "2"]    
     return method.lower() in banned_methods or [c in method.lower() for c in contains_banned].count(True) > 0
 
+def proper_method_name(method):
+    methods = { "DAISY": "ExG-Daisy",
+                "Resnet": "ExG-Resnet",
+                "SIFT": "ExG-DSIFT",
+                "Dino": "ExG-Dino",
+                "Gabor-HOG": "ExG-Gabor-HOG",
+                "LSS": "ExG-LSS",
+                "Gabor-LSS": "ExG-Gabor-LSS",
+                "HOG": "ExG-HOG",
+                "Gabor": "ExG-Gabor",
+                "Gabor-HOG2": "ExG-Gabor-HOG2",
+                "Gabor-HOG2-LSS": "ExG-Gabor-HOG2-LSS",
+                "Resnet-M": "ExG-Resnet-M",
+                "DAISY-Gabor": "ExG-DAISY-Gabor",
+                "DAISY-HOG": "ExG-DAISY-HOG",
+                "DAISY-GABOR-HOG": "ExG-DAISY-GABOR-HOG",
+                "Exg-Daisy-Elev-Gabor": "ExG-Daisy-Elev-Gabor",
+                "Exg-Daisy-Elev-HOG": "ExG-Daisy-Elev-HOG",
+                "Exg-Daisy-Elev-Gabor-HOG": "ExG-Daisy-Elev-Gabor-HOG",
+                
+                "Exg-Daisy-Elev-Daisy-Gabor": "ExG-Daisy-Elev-Daisy-Gabor",
+                "Exg-Daisy-Elev-Daisy-HOG": "ExG-Daisy-Elev-Daisy-HOG",
+                "Exg-Daisy-Elev-Daisy-Gabor-HOG": "ExG-Daisy-Elev-Daisy-Gabor-HOG",
+
+                "Exg-Elev-Daisy-Gabor": "ExG-Elev-Daisy-Gabor",
+                "Exg-Elev-Daisy-HOG": "ExG-Elev-Daisy-HOG",
+                "Exg-Elev-Daisy-Gabor-HOG": "ExG-Elev-Daisy-Gabor-HOG",
+                "Daisy-FPFH": "ExG-Daisy-Elev-FPFH",
+    }    
+    return methods.get(method, method)
+    
+
 def print_metrics(rowNumber, group):
     print("\nRegistration Error Metrics (averaged over successful cases):")
     print("Scale_mag trans_mag yaw_mag row succesRate  Method   Transl Err  Angle Err  Scale Err")
@@ -148,7 +180,7 @@ def plot_success_metrics(row_number, group, title="Registration Error Metrics", 
     scales = sorted(group.keys())
     transl_noises = sorted(group[scales[0]].keys())
     yaw_noises = sorted(group[scales[0]][transl_noises[0]].keys())
-    methods = sorted(group[scales[0]][transl_noises[0]][yaw_noises[0]].keys())
+    methods = sorted([m for m in group[scales[0]][transl_noises[0]][yaw_noises[0]].keys() if not banned_method(m)])
     
     def get_title(scale, transl_noise, yaw_noise):
         if len(scales) > 1:
@@ -173,6 +205,7 @@ def plot_success_metrics(row_number, group, title="Registration Error Metrics", 
     fig = plt.figure(figsize=(20, 8))
     fig.suptitle(get_title(scales[0], transl_noises[0], yaw_noises[0]))
     c2 = 1
+    labels = {}
     for scale in scales:
         for transl_noise in transl_noises:
             for yaw_noise in yaw_noises:                
@@ -183,15 +216,18 @@ def plot_success_metrics(row_number, group, title="Registration Error Metrics", 
                     if banned_method(method) or method not in group[scale][transl_noise][yaw_noise]:
                         continue
                     samples = len(group[scale][transl_noise][yaw_noise][method]['transl_err'])
-                    if samples > 0:
+                    if samples > 0 or method in labels:
                         success_rate = samples / group[scale][transl_noise][yaw_noise][method]['count'] * 100                        
-                        plt.bar(f"{counter}", success_rate, label=f"{counter}-{method}", color=plt.cm.brg((counter + 1) / max(len(methods), 1)))
+                        plt.bar(f"{counter}", success_rate, color=plt.cm.brg((counter + 1) / max(len(methods), 1)))
+                        
+                        labels[method] = f"{counter}-{proper_method_name(method)}"
                         counter += 1                    
                 plt.title(get_subtitle(scale, transl_noise, yaw_noise))
                 plt.ylabel("Success Rate (%)")
                 plt.ylim(0, 105)
                 plt.grid(axis='y')
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    plt.legend(labels=labels.values() ,loc='center left', bbox_to_anchor=(1, 0.5))
     if save_path is None:
         fig.tight_layout()
         plt.show()
@@ -285,7 +321,7 @@ def plot_error_metrics(row_number, group, title="Registration Error Metrics", sa
                         plt.boxplot(group[scale][transl_noise][yaw_noise][method]['scale_err'], positions=[counter], widths=0.6, patch_artist=True, boxprops=dict(facecolor=colors[method]))
                         plt.ylabel("Scale Error")
                         plt.ylim(0, 2.55)                        
-                        labels.append(f"{counter}-{method}")
+                        labels.append(f"{counter}-{proper_method_name(method)}")
                         counter += 1
 
                 plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), labels=labels,)
