@@ -41,3 +41,4 @@ void AffineTransformFromString(const std::string& str,
 Vector3 getScaleFromAffineMatrix(const Matrix3& aff);
 
 int computeExGforXYZRGBPoint(const PCLptXYZRGB& pt);
+int computeExBrforXYZRGBPoint(const PCLptXYZRGB& pt);

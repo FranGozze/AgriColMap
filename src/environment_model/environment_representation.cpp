@@ -108,7 +108,7 @@ PCLptXYZRGB EnvironmentRepresentation::computeAveragePoint(std::vector<PCLptXYZR
     return out_pt;
 }
 
-void EnvironmentRepresentation::computeMMGridMap()
+void EnvironmentRepresentation::computeMMGridMap(const bool &erodeSoilMap)
 {
 
     // Image size is flipped for the sake of better visualization of the results
@@ -117,8 +117,8 @@ void EnvironmentRepresentation::computeMMGridMap()
     xyzImg = cv::Mat(cv::Size(_height, _width), CV_32FC3, cv::Scalar(0, 0, 0));
     exgImgColor = cv::Mat(cv::Size(_height, _width), CV_8UC3, cv::Scalar(0, 0, 0));
     rgbImg = cv::Mat(cv::Size(_height, _width), CV_8UC3, cv::Scalar(0, 0, 0));
-    soilImg_WE_3x3 = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0));
-    soilImg_WE_5x5 = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0)); // With Erosion
+    soilImg_WE = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0));
+    soilImg_WE_Enhanced = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0)); // With Erosion
     cv::Mat soilImg = cv::Mat(cv::Size(_height, _width), CV_8UC1, cv::Scalar(0)); 
     int iter = 0;
     for (unsigned int r = 0; r < _height; ++r)
@@ -129,10 +129,11 @@ void EnvironmentRepresentation::computeMMGridMap()
             if (pt.getVector3fMap().norm() <= 1e-3)
                 continue;
             int ExG = computeExGforXYZRGBPoint(pt);
+            int ExBr = computeExBrforXYZRGBPoint(pt);
             exgImg.at<uchar>(c, r) = static_cast<uchar>(std::max(0, ExG));
-            soilImg.at<uchar>(c, r) =
+            soilImg.at<uchar>(c, r) = static_cast<uchar>(std::max(0, ExBr));
                 // (ExG < 0) ? 255 : 0;
-                static_cast<uchar>(std::abs(std::min(0, ExG)));
+                // static_cast<uchar>(std::abs(std::max(0, ExBr)));
 
             // soilImg.at<cv::Vec3b>(c,r)[0] = (ExG < 0) ? pt.b : 0;
             // soilImg.at<cv::Vec3b>(c,r)[1] = (ExG < 0) ? pt.g : 0;
@@ -164,20 +165,25 @@ void EnvironmentRepresentation::computeMMGridMap()
     for (int i = 0; i < 256; ++i) {
         ptr[i] = cv::saturate_cast<uchar>(std::pow(i / 255.0, invGamma) * 255.0);
     }
-    cv::Mat imgGammaCorrected;
+    cv::Mat imgGammaCorrected;    
     cv::LUT(imgEnhanced, lut, imgGammaCorrected);
     
-    
-    const cv::Mat morphologyKernel_3x3 = cv::getStructuringElement(
-        cv::MORPH_ELLIPSE, cv::Size(3, 3));
-    cv::erode(imgGammaCorrected, soilImg_WE_3x3, morphologyKernel_3x3);
-    cv::dilate(soilImg_WE_3x3, soilImg_WE_3x3, morphologyKernel_3x3);
 
-    const cv::Mat morphologyKernel_5x5 = cv::getStructuringElement(
-        cv::MORPH_ELLIPSE, cv::Size(5, 5));
-    cv::erode(imgGammaCorrected, soilImg_WE_5x5, morphologyKernel_5x5);
-    cv::dilate(soilImg_WE_5x5, soilImg_WE_5x5, morphologyKernel_5x5);
+    if (!erodeSoilMap) {
+        soilImg_WE_Enhanced = imgGammaCorrected.clone();
+        soilImg_WE = soilImg.clone();
+     
+    }else{    
+        const cv::Mat morphologyKernel_3x3 = cv::getStructuringElement(
+                                                cv::MORPH_ELLIPSE, cv::Size(3, 3));
+        cv::erode(imgGammaCorrected, soilImg_WE_Enhanced, morphologyKernel_3x3);
+        cv::dilate(soilImg_WE_Enhanced, soilImg_WE_Enhanced, morphologyKernel_3x3);
 
+        cv::erode(soilImg, soilImg_WE, morphologyKernel_3x3);
+        cv::dilate(soilImg_WE, soilImg_WE, morphologyKernel_3x3);
+        // soilImg_WE_3x3 = imgGammaCorrected.clone();
+        // soilImg_WE_5x5 = imgGammaCorrected.clone();
+    }
     cv::normalize(xyzImg, xyzImgUChar, 255, 0, cv::NORM_MINMAX);
     xyzImgUChar.convertTo(xyzImgUChar, CV_8UC3);
 }

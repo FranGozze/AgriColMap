@@ -586,9 +586,9 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
         }
     }
     
-    imgF._im_exg[level].allocate(w, h, 104);
-    imgF._im_soil[level].allocate(w, h, 104);
-    imgF._im_elev[level].allocate(w, h, 33);
+    
+    
+    
     
     if( _useVisFeats ){
         cv::Ptr<cv::xfeatures2d::DAISY> daisy =	cv::xfeatures2d::DAISY::create(5, 3, 4, 8, cv::xfeatures2d::DAISY::NRM_FULL, cv::noArray(), false, false);
@@ -598,6 +598,7 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
         // std::cout << "Computed features for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << std::endl;
 
         int itSize = outFeatures_Exg.cols;
+        imgF._im_exg[level].allocate(w, h, 104);
         // std::cout << "Feature size for Exg: " << itSize << std::endl;
         // std::cout << "Feature matrix size for Exg: " << outFeatures_Exg.rows << " x " << outFeatures_Exg.cols << " x " << outFeatures_Exg.channels() << std::endl;
         //outFtImg_Exg.allocate(w, h, itSize);
@@ -620,7 +621,7 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
         cv::Mat outFeatures_Soil;            
         daisy->compute(cvImg_Soil, outFeatures_Soil);
         int itSize = outFeatures_Soil.cols;
-        
+        imgF._im_soil[level].allocate(w, h, 104);    
         //outFtImg_Soil.allocate(w, h, itSize);
         for (int i = 0; i < h; i++){
             for (int j = 0; j < w; j++){
@@ -634,45 +635,45 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
         
     }
 
-    if( _useGeomFeats ) {
-        // Creating the Cloud
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
-        pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfh (new pcl::PointCloud<pcl::FPFHSignature33> ());
-        cv::Mat cloudIndexes(h, w, CV_8UC1, cv::Scalar(0));
-        CreateXYZCloud(cloud, cvImg_Elev, cloudIndexes);
-        NormalsAndFPFHEstimation(cloud, cloud_normals, fpfh, cloud_ratio);
+    // if( _useGeomFeats ) {
+    //     // Creating the Cloud
+    //     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+    //     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+    //     pcl::PointCloud<pcl::FPFHSignature33>::Ptr fpfh (new pcl::PointCloud<pcl::FPFHSignature33> ());
+    //     cv::Mat cloudIndexes(h, w, CV_8UC1, cv::Scalar(0));
+    //     CreateXYZCloud(cloud, cvImg_Elev, cloudIndexes);
+    //     NormalsAndFPFHEstimation(cloud, cloud_normals, fpfh, cloud_ratio);
+    //     imgF._im_elev[level].allocate(w, h, 33);
+    //     // Normalizing FPFH descriptor
+    //     int fpfhSize = 33;
+    //     for (int i = 0; i < fpfh->size(); i++){
+    //             float normalizer = 0.f;
+    //             for (int k = 0; k < fpfhSize; k++){
+    //                 normalizer +=  fpfh->points[i].histogram[k]*fpfh->points[i].histogram[k];
+    //             }
+    //             normalizer = sqrt(normalizer);
+    //             for (int k = 0; k < fpfhSize; k++){
+    //                 fpfh->points[i].histogram[k] /= normalizer;
+    //             }
+    //     }
 
-        // Normalizing FPFH descriptor
-        int fpfhSize = 33;
-        for (int i = 0; i < fpfh->size(); i++){
-                float normalizer = 0.f;
-                for (int k = 0; k < fpfhSize; k++){
-                    normalizer +=  fpfh->points[i].histogram[k]*fpfh->points[i].histogram[k];
-                }
-                normalizer = sqrt(normalizer);
-                for (int k = 0; k < fpfhSize; k++){
-                    fpfh->points[i].histogram[k] /= normalizer;
-                }
-        }
 
 
-
-        int counter = 0;
-        for (int i = 0; i < h; i++){
-            for (int j = 0; j < w; j++){
-                int idx = i*w + j;
-                if( cloudIndexes.at<unsigned char>(i, j) == 1 ){
-                    for (int k = 0; k < fpfhSize; k++)
-                        imgF._im_elev[level].pData[idx*fpfhSize + k] = (unsigned char)round(fpfh->points[counter].histogram[k]*255);
-                    counter++;
-                } else if( cloudIndexes.at<unsigned char>(i, j) == 0 ) {
-                    for (int k = 0; k < fpfhSize; k++)
-                        imgF._im_elev[level].pData[idx*fpfhSize + k] = 0;
-                }
-            }
-        }
-    }
+    //     int counter = 0;
+    //     for (int i = 0; i < h; i++){
+    //         for (int j = 0; j < w; j++){
+    //             int idx = i*w + j;
+    //             if( cloudIndexes.at<unsigned char>(i, j) == 1 ){
+    //                 for (int k = 0; k < fpfhSize; k++)
+    //                     imgF._im_elev[level].pData[idx*fpfhSize + k] = (unsigned char)round(fpfh->points[counter].histogram[k]*255);
+    //                 counter++;
+    //             } else if( cloudIndexes.at<unsigned char>(i, j) == 0 ) {
+    //                 for (int k = 0; k < fpfhSize; k++)
+    //                     imgF._im_elev[level].pData[idx*fpfhSize + k] = 0;
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 void CPM::CrossCheck(IntImage& seeds, FImage& seedsFlow, FImage& seedsFlow2, IntImage& kLabel2, int* valid, float th)
