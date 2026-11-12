@@ -59,9 +59,24 @@ int computeExGforXYZRGBPoint(const PCLptXYZRGB& pt){
         green = (int)pt.g / sum;
         blue = (int)pt.b / sum;
         // sumNorm = blue + green + red;
-        ExG = (2 * green - blue - red) * 255.0;
+        ExG = (2 * green - blue - red) * 255.0f;
         // ExG = std::max(0.f, ExG);
 
         return static_cast<int>(ExG);
+}
+
+int computeExBrforXYZRGBPoint(const PCLptXYZRGB& pt){
+
+        float red, blue, green, sum, ExBr, sumNorm = 0.f;
+        sum = (int)pt.r  + (int)pt.g  + (int)pt.b;
+        red = (int)pt.r / sum;
+        green = (int)pt.g / sum;
+        blue = (int)pt.b / sum;
+        // sumNorm = blue + green + red;
+        ExBr = 2.0f*(red - green) * 255.0f;
+        // ExBr = (2 * red - blue - green) * 255.0f;
+        // ExBr = std::max(0.f, ExBr);
+
+        return static_cast<int>(ExBr);
 }
 // 159 150 156

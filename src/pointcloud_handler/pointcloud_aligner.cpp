@@ -45,7 +45,7 @@ void PointCloudAligner::computeEnvironmentalModels(const string& mov_cloud_key, 
     // std:cout << "s value: " << _s << "\n";
     ERMap.emplace( mov_cloud_key, boost::shared_ptr<EnvironmentRepresentation> ( new EnvironmentRepresentation(mov_cloud_key) ) );
     ERMap[mov_cloud_key]->loadFromPCLcloud( pclMap[mov_cloud_key], _s, Vector2(0.f, 0.f), 0.01, _size );
-    ERMap[mov_cloud_key]->computeMMGridMap();
+    ERMap[mov_cloud_key]->computeMMGridMap(true);
 //  ERMap.find(fix_cloud_key) != ERMap.end()
     if(ERMap.find(fix_cloud_key) != ERMap.end()){
         cerr << FRED("Has already been has enviromental models computed. Removing it before doing it again") << "\n";
@@ -110,35 +110,36 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     img2Cloud.imcopy( ERMap[cloud2_name]->getXyzImg() );
     
 
-    int mode = 0; // 0: With Erosion 3x3, 1: With Erosion 5x5
+    int mode = 0; // 0: With Erosion 3x3, 1: With Erosion 3x3 enhanced
 
     if(matchingMode >= 25 && matchingMode <= 27)
         mode = 0; // With Erosion 3x3
     else if(matchingMode >= 28 && matchingMode <= 30)
-        mode = 1; // With Erosion 5x5
-    std::cerr << FBLU("Soil Image Mode: ") << mode << "\n";
-    img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg(mode) );
-    img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg(mode) );
+        mode = 1; // With Erosion 3x3 Enhanced
+    // std::cerr << FBLU("Soil Image Mode: ") << mode << "\n";
+    // img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg(mode) );
+    // img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg(mode) );
     
     // cv::Size draw_img_size( _size.width*2, _size.height );
-    // cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(0) );
+    // cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(255) );
     // ERMap[cloud1_name]->getSoilImg(mode).copyTo( drawImg( cv::Rect(0, 0, _size.width, _size.height) )  );
     // ERMap[cloud2_name]->getSoilImg(mode).copyTo( drawImg( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
-    // // cv::circle(drawImg, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255), -1);
-    // // cv::circle(drawImg, cv::Point2f(_size.width/2.0 + _size.width, _size.height/2.0), 10, cv::Scalar(255), -1);
     // cv::Mat drawImgRes;
     // cv::resize(drawImg, drawImgRes, cv::Size( 2000, 1000 ) );
-    // cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_soil.png",drawImgRes);
+    // cv::imwrite(getPackagePath() + "/imgs/Rosario_" + _moving_pcl + "_soil_Br.png",drawImgRes);
     
-    // cv::Mat drawImg2( draw_img_size, CV_8UC3, cv::Scalar(0,0,0) );
-    // ERMap[cloud1_name]->getRgbImg().copyTo( drawImg2( cv::Rect(0, 0, _size.width, _size.height) )  );
-    // ERMap[cloud2_name]->getRgbImg().copyTo( drawImg2( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
-    // cv::circle(drawImg2, cv::Point2f(_size.width/2.0, _size.height/2.0), 10, cv::Scalar(255,255,255), -1);
-    // cv::circle(drawImg2, cv::Point2f(_size.width/2.0 + _size.width, _size.height/2.0), 10, cv::Scalar(255,255,255), -1);
+    // cv::Mat drawImg2( draw_img_size, CV_8UC1, cv::Scalar(255) );
+    // ERMap[cloud1_name]->getExgImg().copyTo( drawImg2( cv::Rect(0, 0, _size.width, _size.height) )  );
+    // ERMap[cloud2_name]->getExgImg().copyTo( drawImg2( cv::Rect(_size.width, 0, _size.width, _size.height) )  );
     // cv::Mat drawImgRes2;
     // cv::resize(drawImg2, drawImgRes2, cv::Size( 2000, 1000 ) );
-    // cv::imwrite(getPackagePath() + "/imgs/" + cloud1_name + "_" + cloud2_name + "_centerpoint_rgb.png",drawImgRes2);
+    // cv::imwrite(getPackagePath() + "/imgs/Rosario_" + _moving_pcl + "_exg.png",drawImgRes2);
     
+    // cv::Mat rotatedRgbImg;
+    // cv::rotate(ERMap[cloud2_name]->getRgbImg(), rotatedRgbImg, cv::ROTATE_90_COUNTERCLOCKWISE);
+    // cv::Size draw_img_size2( rotatedRgbImg.cols, rotatedRgbImg.rows );
+    // cv::imwrite(getPackagePath() + "/imgs/Rosario_"+ _moving_pcl + "_rgb.png",rotatedRgbImg);
+
     // std::cout << "Saving ExG Images. Coordinates: " << ERMap[cloud1_name]->getXCoord() << ", " << ERMap[cloud1_name]->getYCoord() << "\n";
     std::cout << "Matching Mode: " << getFeatureString() << "\n";
 

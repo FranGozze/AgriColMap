@@ -96,13 +96,13 @@ class PointCloudHandler{
 
                 case 24: return "Daisy-FPFH";
 
-                case 25: return "ExG-Soil-Enhanced-Erosion3x3-Daisy-W" + getSoilWeightString();
-                case 26: return "ExG-Soil-Enhanced-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
-                case 27: return "ExG-Elev-Soil-Enhanced-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                case 25: return "ExG-Soil-Erosion3x3-Daisy-W" + getSoilWeightString();
+                case 26: return "ExG-Soil-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                case 27: return "ExG-Elev-Soil-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
                 
-                case 28: return "ExG-Soil-Enhanced-Erosion5x5-Daisy-W" + getSoilWeightString();                
-                case 29: return "ExG-Soil-Enhanced-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
-                case 30: return "ExG-Elev-Soil-Enhanced-Erosion5x5-Daisy-Gabor-W" + getSoilWeightString();
+                case 28: return "ExG-Soil-Enhanced-Erosion3x3-Daisy-W" + getSoilWeightString();                
+                case 29: return "ExG-Soil-Enhanced-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
+                case 30: return "ExG-Elev-Soil-Enhanced-Erosion3x3-Daisy-Gabor-W" + getSoilWeightString();
 
                 default: return "UNKWON";
             }

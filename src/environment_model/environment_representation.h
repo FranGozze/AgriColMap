@@ -16,7 +16,7 @@ class EnvironmentRepresentation{
                               const float& radius = 0.01,
                               const cv::Size& gridMapSize = cv::Size(1300,1300) );
 
-        void computeMMGridMap();
+        void computeMMGridMap(const bool &erodeSoilMap = false);
 
         // GetFunctions()
         inline cv::Mat getRgbImg(){ return rgbImg; }
@@ -26,9 +26,9 @@ class EnvironmentRepresentation{
         inline cv::Mat getelevImg(){ return xyzImg; };
         inline cv::Mat getExgImg(){ return exgImg; };
         inline cv::Mat getSoilImg(int mode = 0){ switch(mode){
-            case 0: return soilImg_WE_3x3; // With Erosion 3x3
-            case 1: return soilImg_WE_5x5; // With Erosion 5x5
-            default: return soilImg_WE_3x3;
+            case 0: return soilImg_WE; // With Erosion 3x3
+            case 1: return soilImg_WE_Enhanced; // With Erosion 5x5
+            default: return soilImg_WE;
         } };
 
         inline float getXCoord(){ return x_coord; }
@@ -46,6 +46,6 @@ class EnvironmentRepresentation{
         PCLptXYZRGB minPt, maxPt;
         float _square_size, x_coord, y_coord;
         cv::Mat exgImg, elevImg, xyzImg, xyzImgUChar, exgImgColor, rgbImg;
-        cv::Mat soilImg_WE_3x3, soilImg_WE_5x5;
+        cv::Mat soilImg_WE, soilImg_WE_Enhanced;
         int altitude_scale;
 };
