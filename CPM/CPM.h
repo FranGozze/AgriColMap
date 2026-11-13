@@ -39,7 +39,7 @@ corresponding to one match per line.
 	#include <pcl/features/normal_3d.h>
 	#include <pcl/features/fpfh_omp.h>
 #endif
-
+#include <immintrin.h>
 #include "PythonClient.hpp"
 
 

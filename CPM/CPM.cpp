@@ -2,6 +2,7 @@
 #include "ImageFeature.h"
 
 #include <opencv2/xfeatures2d.hpp>// for "DAISY" descriptor
+#include <omp.h>
 
 // [4/6/2017 Yinlin.Hu]
 
@@ -306,6 +307,8 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
     _im2_elev = new UCImage[nLevels];
 
     float cloud_ratio = 0.f;
+// PythonClient is not thread safe, so we cannot parallelize this loop for now.
+// #pragma omp parallel for      
     for (int i = 0; i < nLevels; i++){
         cloud_ratio = i * (1/_pydRatio);
         if (featureMode == 0){
@@ -319,6 +322,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img2, FImage& img2Clo
         // 		ImageFeature::imSIFT(_pyd1[i], _im1f[i], 2, 1, true, 8);
         // 		ImageFeature::imSIFT(_pyd2[i], _im2f[i], 2, 1, true, 8);
     }
+
     //std::exit(1);
     t.toc("get feature: ");
 
@@ -596,6 +600,36 @@ void CPM::CrossCheck(IntImage& seeds, FImage& seedsFlow, FImage& seedsFlow2, Int
     }
 }
 
+uint64_t sseSumOfAbsoluteDifferences(const unsigned char* a, const unsigned char* b, size_t size) {
+    __m128i vsum = _mm_setzero_si128();
+    size_t i = 0;
+
+    // Process 16 bytes at a time
+    for (; i + 15 < size; i += 16) {
+        __m128i va = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&a[i]));
+        __m128i vb = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&b[i]));
+
+        // Computes absolute differences and accumulates them
+        // Note: _mm_sad_epu8 outputs two 64-bit integers containing partial sums
+        __m128i vdiff = _mm_sad_epu8(va, vb);
+        
+        vsum = _mm_add_epi64(vsum, vdiff);
+    }
+
+    // Extract the partial sums from the 128-bit register
+    alignas(16) uint64_t buffer[2];
+    _mm_store_si128(reinterpret_cast<__m128i*>(buffer), vsum);
+    uint64_t total = buffer[0] + buffer[1];
+
+    // Handle any remaining bytes if size isn't a multiple of 16
+    for (; i < size; ++i) {
+        int diff = static_cast<int>(a[i]) - static_cast<int>(b[i]);
+        total += (diff < 0) ? -diff : diff;
+    }
+
+    return total;
+}
+
 float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev, int x1, int y1, int x2, int y2)
 {
     //std::cerr << "inizio";
@@ -626,40 +660,44 @@ float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_
 
 
 
-#ifdef WITH_SSE
+// #ifdef WITH_SSE
+    // std::cout << "SSE2 is enabled \n";
     // SSE2
-    unsigned char *_p1 = p1, *_p2 = p2;
-    hu_m128 r1, r2, r3;
-    int iterCnt = ch / 16;
-    int idx = 0;
-    int sum0 = 0;
-    int sum1 = 0;
-    for (idx = 0; idx < iterCnt; idx++){
-        memcpy(&r1, _p1, sizeof(hu_m128));
-        memcpy(&r2, _p2, sizeof(hu_m128));
-        _p1 += sizeof(hu_m128);
-        _p2 += sizeof(hu_m128);
-        r3.mi = _mm_sad_epu8(r1.mi, r2.mi);
-        sum0 += r3.m128i_u16[0];
-        sum1 += r3.m128i_u16[4];
-    }
-    totalDiff += sum0;
-    totalDiff += sum1;
-    // add the left
-    for (idx *= 16; idx < ch; idx++){
-        totalDiff += abs(p1[idx] - p2[idx]);
-    }
-#else
+    // unsigned char *_p1 = p1, *_p2 = p2;
+    // __m128 r1, r2, r3;
+    // int iterCnt = ch / 16;
+    // int idx = 0;
+    // int sum0 = 0;
+    // int sum1 = 0;
+    // for (idx = 0; idx < iterCnt; idx++){
+    //     r1 = _mm_load_u8(_p1);
+    //     r2 = _mm_load_u8(_p2);
+    //     _p1 += sizeof(__m128);
+    //     _p2 += sizeof(__m128);
+    //     r3.mi = _mm_sad_epu8(r1.mi, r2.mi);
+    //     sum0 += r3.m128i_u16[0];
+    //     sum1 += r3.m128i_u16[4];
+    // }
+    // totalDiffExg += sum0;
+    // totalDiffExg += sum1;
+    // // add the left
+    // for (idx *= 16; idx < ch; idx++){
+    //     totalDiffExg += abs(p1[idx] - p2[idx]);
+    // }
+    totalDiffExg += sseSumOfAbsoluteDifferences(p1, p2, ch);
+    totalDiffElev += sseSumOfAbsoluteDifferences(p1e, p2e, chCloud);
 
-        //std::cerr << "totalDiffExg";
-        for (int idx = 0; idx < ch; idx++)
-            totalDiffExg += abs(p1[idx] - p2[idx]);
+// #else
 
-        //std::cerr << "totalDiffElev";
-        for (int idx = 0; idx < chCloud; idx++)
-            totalDiffElev += abs(p1e[idx] - p2e[idx]);
+//         //std::cerr << "totalDiffExg";
+//         for (int idx = 0; idx < ch; idx++)
+//             totalDiffExg += abs(p1[idx] - p2[idx]);
 
-#endif
+//         //std::cerr << "totalDiffElev";
+//         for (int idx = 0; idx < chCloud; idx++)
+//             totalDiffElev += abs(p1e[idx] - p2e[idx]);
+
+// #endif
     //std::cerr << _useVisFeats << " " << _useGeomFeats << " " << _vis_weight << " " << _geom_weight << "fine \n";
     return totalDiffExg + .5 * totalDiffElev;
 
@@ -685,8 +723,9 @@ int CPM::Propogate(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* pyd1_exg, 
 
     int maxNb = neighbors.width();
     int* vFlags = new int[ptNum];
-
+    // std::cout << "ptNum: " << ptNum << " _maxIters: " << _maxIters << " maxNb: " << maxNb << std::endl;
     // init cost
+// #pragma omp parallel for
     for (int i = 0; i < ptNum; i++){
         int x = seeds->pData[2 * i];
         int y = seeds->pData[2 * i + 1];
@@ -806,6 +845,7 @@ void CPM::PyramidRandomSearch(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage*
 
     // random Initialization on coarsest level
     int initR = _maxDisplacement * pow(ratio, nLevels - 1) + 0.5;
+// #pragma omp parallel for
     for (int i = 0; i < numV; i++){
         pydSeedsFlow[nLevels - 1][2 * i] = rand() % (2 * initR + 1) - initR;
         if (_isStereo){
@@ -816,6 +856,7 @@ void CPM::PyramidRandomSearch(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage*
     }
 
     // set the radius of coarsest level
+// #pragma omp parallel for
     for (int i = 0; i < numV; i++){
         searchRadius[i] = initR;
     }
@@ -824,14 +865,13 @@ void CPM::PyramidRandomSearch(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage*
     for (int i = 0; i < nLevels; i++){
         iterCnts[i] = _maxIters;
     }
-
     for (int l = nLevels - 1; l >= 0; l--){ // coarse-to-fine
         int iCnt = Propogate(pyd1, pyd2, im1_exg, im1_elev, im2_exg, im2_elev, l, searchRadius, iterCnts[l], pydSeeds, neighbors, pydSeedsFlow, bestCosts);
         if (l > 0){
             UpdateSearchRadius(neighbors, pydSeedsFlow, l, searchRadius);
-
+            
             // scale the radius accordingly
-            int maxR = __min(32, _maxDisplacement * pow(ratio, l) + 0.5);
+            int maxR = __min(32, _maxDisplacement * pow(ratio, l) + 0.5);        
             for (int i = 0; i < numV; i++){
                 searchRadius[i] = __max(__min(searchRadius[i], maxR), 1);
                 searchRadius[i] *= (1. / _pydRatio);
@@ -857,7 +897,11 @@ void CPM::OnePass(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* im1_exg, UC
 
     int numV = seeds.height();
 
+    // std::cout << "numV: " << numV << "nLevels: " << nLevels << std::endl;
+
     IntImage* pydSeeds = new IntImage[nLevels];
+
+// #pragma omp parallel for
     for (int i = 0; i < nLevels; i++){
         pydSeeds[i].allocate(2, numV);
         int sw = pyd1[i].width();
@@ -872,6 +916,7 @@ void CPM::OnePass(FImagePyramid& pyd1, FImagePyramid& pyd2, UCImage* im1_exg, UC
 
     // scale
     int b = _borderWidth;
+
     for (int i = 0; i < nLevels; i++){
         pydSeedsFlow[i].Multiplywith(pow(1. / ratio, i));
     }
