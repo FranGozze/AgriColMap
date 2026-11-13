@@ -2,7 +2,6 @@
 #include "ImageFeature.h"
 
 #include <opencv2/xfeatures2d.hpp>// for "DAISY" descriptor
-#include <omp.h>
 
 // [4/6/2017 Yinlin.Hu]
 
@@ -278,7 +277,6 @@ void CPM::VotingScheme(FImage& inpMatches, FImage& outMatches, const cv::Mat& rg
 
 }
 
-
 int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img2, FImage& img2Cloud, FImage& img2Soil, FImage& outMatches, int featureMode)    
 {
 
@@ -291,7 +289,6 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
 
     int w = img1.width();
     int h = img1.height();
-
     _img1Features._pyd.ConstructPyramid(img1, _pydRatio, 75);
     _img2Features._pyd.ConstructPyramid(img2, _pydRatio, 75);
 
@@ -300,9 +297,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
 
     _img1Features._pyd_soil.ConstructPyramid(img1Soil, _pydRatio, 75);
     _img2Features._pyd_soil.ConstructPyramid(img2Soil, _pydRatio, 75);
-
-    int nLevels = _img1Features._pyd.nlevels();
-
+    
     if (_img1Features._im_exg)
         delete[] _img1Features._im_exg;
     if (_img1Features._im_elev)
@@ -316,7 +311,7 @@ int CPM::Matching(FImage& img1, FImage& img1Cloud, FImage& img1Soil, FImage& img
     if (_img2Features._im_soil)
         delete[] _img2Features._im_soil;
 
-
+    int nLevels = _img1Features._pyd.nlevels();
     _img1Features._im_exg = new UCImage[nLevels];
     _img1Features._im_elev = new UCImage[nLevels];
     _img1Features._im_soil = new UCImage[nLevels];
@@ -612,7 +607,6 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
             }
         }
     }
-    
     if( _useSoilFeats ){
 
         // cv::Mat outFeatures_Soil=  extractGaborFeatures(cvImg_Soil, {2.0,4.0,8.0,12.0}, 13, {4.0,8.0});
@@ -635,7 +629,7 @@ void CPM::imDaisy(int level, ImageFeatures &imgF,  const float &cloud_ratio)
         }
         
     }
-
+    
     // if( _useGeomFeats ) {
     //     // Creating the Cloud
     //     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -743,7 +737,7 @@ uint64_t sseSumOfAbsoluteDifferences(const unsigned char* a, const unsigned char
     return total;
 }
 
-float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_elev, UCImage* im2_exg, UCImage* im2_elev, int x1, int y1, int x2, int y2)
+float CPM::MatchCost(ImageFeatures &imgF1, ImageFeatures &imgF2, int level, int x1, int y1, int x2, int y2)
 {
     //std::cerr << "inizio";
     int w = imgF1._im_exg[level].width();
@@ -778,36 +772,10 @@ float CPM::MatchCost(FImage& img1, FImage& img2, UCImage* im1_exg, UCImage* im1_
     totalDiffSoil = 0;
 
 
-
-// #ifdef WITH_SSE
-    // std::cout << "SSE2 is enabled \n";
-    // SSE2
-    // unsigned char *_p1 = p1, *_p2 = p2;
-    // __m128 r1, r2, r3;
-    // int iterCnt = ch / 16;
-    // int idx = 0;
-    // int sum0 = 0;
-    // int sum1 = 0;
-    // for (idx = 0; idx < iterCnt; idx++){
-    //     r1 = _mm_load_u8(_p1);
-    //     r2 = _mm_load_u8(_p2);
-    //     _p1 += sizeof(__m128);
-    //     _p2 += sizeof(__m128);
-    //     r3.mi = _mm_sad_epu8(r1.mi, r2.mi);
-    //     sum0 += r3.m128i_u16[0];
-    //     sum1 += r3.m128i_u16[4];
-    // }
-    // totalDiffExg += sum0;
-    // totalDiffExg += sum1;
-    // // add the left
-    // for (idx *= 16; idx < ch; idx++){
-    //     totalDiffExg += abs(p1[idx] - p2[idx]);
-    // }
     totalDiffExg += sseSumOfAbsoluteDifferences(p1, p2, ch);
     totalDiffElev += sseSumOfAbsoluteDifferences(p1e, p2e, chCloud);
     totalDiffSoil += sseSumOfAbsoluteDifferences(p1s, p2s, chSoil);
 
-        //std::cerr << "totalDiffExg";
     // if( _useVisFeats )
     //     for (int idx = 0; idx < ch; idx++)
     //         totalDiffExg += abs(p1[idx] - p2[idx]);

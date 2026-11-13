@@ -117,8 +117,8 @@ void PointCloudAligner::getMatches(const std::string& cloud1_name, const std::st
     else if(matchingMode >= 28 && matchingMode <= 30)
         mode = 1; // With Erosion 3x3 Enhanced
     // std::cerr << FBLU("Soil Image Mode: ") << mode << "\n";
-    // img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg(mode) );
-    // img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg(mode) );
+    img1Soil.imcopy( ERMap[cloud1_name]->getSoilImg(mode) );
+    img2Soil.imcopy( ERMap[cloud2_name]->getSoilImg(mode) );
     
     // cv::Size draw_img_size( _size.width*2, _size.height );
     // cv::Mat drawImg( draw_img_size, CV_8UC1, cv::Scalar(255) );
